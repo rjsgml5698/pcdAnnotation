@@ -1,23 +1,21 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import AjaxWrapper from './component/ajax_wrapper';
+import boundingbox from './component/boundingbox';
+import ClassBoundingBox from './component/ClassBoundingBox';
+// import createColorMap from './component/createColorMap';
+// import createColorMapBrowser from './component/createColorMapBrowser';
+import Math from './component/Math';
+
+console.log("AjaxWrapper", AjaxWrapper);
+console.log("boundingbox", boundingbox);
+console.log("ClassBoundingBox", ClassBoundingBox);
+console.log("Math", Math);
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+       
       </header>
     </div>
   );
