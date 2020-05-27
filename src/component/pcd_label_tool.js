@@ -1,118 +1,126 @@
 import React, { Component } from "react";
-import labelTool from "./base_label_tool";
-export default class BoundingBox extends Component {
+import baseLabelTool from "./base_label_tool";
+import boundingBox from './boundingbox.js';
+import * as THREE from 'three';
+import classesBoundingBox from './classesBoundingBox.js';
+import { MTLLoader, OBJLoader } from "three-obj-mtl-loader";
+import $ from 'jquery';
+window.$ = $;
+
+export default class pcdLabelTool extends Component {
 
   constructor(props){
     super(props);
-    this.state ={
-      canvasBEV = null,
-      canvasSideView = null,
-      canvasFrontView = null,
-      views = null,
-      grid = null,
 
-      operationStack = [],
+    this.state = {
+      canvasBEV : null,
+      canvasSideView : null,
+      canvasFrontView : null,
+      views : null,
+      grid : null,
 
-      orthographicCamera = null,
-      perspectiveCamera = null,
-      currentCamera = null,
+      operationStack : [],
 
-      cameraBEV = null,
-      cameraSideView = null,
-      cameraFrontView = null,
+      orthographicCamera : null,
+      perspectiveCamera : null,
+      currentCamera : null,
 
-      currentOrbitControls = null,
-      controlsTarget = new THREE.Vector3(0, 0, 0),
-      orthographicOrbitControls = null,
-      perspectiveOrbitControls = null,
-      pointerLockControls = null,
-      pointerLockObject = null,
-      transformControls = null,
-      mapControlsBev = null,
-      mapControlsFrontView = null,
-      mapControlsSideView = null,
+      cameraBEV : null,
+      cameraSideView : null,
+      cameraFrontView : null,
 
-      scene = null,
-      projector = null,
+      currentOrbitControls : null,
+      controlsTarget : new THREE.Vector3(0, 0, 0),
+      orthographicOrbitControls : null,
+      perspectiveOrbitControls : null,
+      pointerLockControls : null,
+      pointerLockObject : null,
+      transformControls : null,
+      mapControlsBev : null,
+      mapControlsFrontView : null,
+      mapControlsSideView : null,
 
-      renderer = null,
-      rendererBev = null,
-      rendererSideView = null,
-      rendererFrontView = null,
+      scene : new THREE.Scene(),
+      projector : null,
 
-      clock = null,
-      container = null,
-      keyboard = null,
-      moveForward = false,
-      moveBackward = false,
-      moveLeft = false,
-      moveRight = false,
-      moveUp = false,
-      moveDown = false,
-      rotateLeft = false,
-      rotateRight = false,
-      rotateUp = false,
-      rotateDown = false,
-      headerHeight = 0,
-      translationVelocity = new THREE.Vector3(),
-      rotationVelocity = new THREE.Vector3(),
-      translationDirection = new THREE.Vector3(),
-      rotationDirection = new THREE.Vector3(),
-      prevTime = performance.now(),
+      renderer : null,
+      rendererBev : null,
+      rendererSideView : null,
+      rendererFrontView : null,
+
+      clock : new THREE.Clock(),
+      container : null,
+      keyboard : new THREE.KeyboardState(),
+      moveForward : false,
+      moveBackward : false,
+      moveLeft : false,
+      moveRight : false,
+      moveUp : false,
+      moveDown : false,
+      rotateLeft : false,
+      rotateRight : false,
+      rotateUp : false,
+      rotateDown : false,
+      headerHeight : 0,
+      translationVelocity : new THREE.Vector3(),
+      rotationVelocity : new THREE.Vector3(),
+      translationDirection : new THREE.Vector3(),
+      rotationDirection : new THREE.Vector3(),
+      prevTime : performance.now(),
 
       // let stats;
-      cube = null,
-      interpolationObjIndexCurrentFile = -1,
-      interpolationObjIndexNextFile = -1,
-      interpolateBtn = null,
+      cube : null,
+      interpolationObjIndexCurrentFile : -1,
+      interpolationObjIndexNextFile : -1,
+      interpolateBtn : null,
 
       // let keyboard = new KeyboardState();
 
-      guiAnnotationClasses = new dat.GUI({autoPlace: true, width: 90, resizable: false}),
+      guiAnnotationClasses : new dat.GUI({autoPlace: true, width: 90, resizable: false}),
       guiBoundingBoxAnnotationMap: null,
-      guiOptions = new dat.GUI({autoPlace: true, width: 350, resizable: false}),
-      guiOptionsOpened = true,
-      numGUIOptions = 17,
-      showProjectedPointsFlag = false,
-      showGridFlag = false,
-      filterGround = false,
-      hideOtherAnnotations = false,
-      interpolationMode = false,
-      showDetections = false,
-      folderBoundingBox3DArray = [],
-      folderPositionArray = [],
-      folderSizeArray = [],
-      bboxFlag = true,
-      clickFlag = false,
-      clickedObjectIndex = -1,
-      clickedObjectIndexPrevious = -1,
-      mousePos = {x: 0, y: 0},
-      intersectedObject = null,
-      mouseDown = {x: 0, y: 0},
-      mouseUp = {x: 0, y: 0},
-      clickedPoint = THREE.Vector3(),
-      groundPointMouseDown = null,
-      groundPlaneArray = [],
-      clickedPlaneArray = [],
-      birdsEyeViewFlag = true,
-      cls = 0,
-      rotWorldMatrix = null,
-      rotObjectMatrix = null,
-      circleArray = [],
-      colorMap = [],
-      activeColorMap = 'colorMapJet.js',
-      currentPoints3D = [],
-      currentDistances = [],
-      spriteBehindObject = null,
-      pointCloudScanList = [],
-      pointCloudScanNoGroundList = [],
-      pointCloudScan = null,
-      pointCloudScanNoGround = null,
-      useTransformControls = null,
-      dragControls = false,
-      keyboardNavigation = false,
-      canvas3D = null,
-      parametersBoundingBox = {
+      guiOptions : new dat.GUI({autoPlace: true, width: 350, resizable: false}),
+      guiOptionsOpened : true,
+      numGUIOptions : 17,
+      showProjectedPointsFlag : false,
+      showGridFlag : false,
+      filterGround : false,
+      hideOtherAnnotations : false,
+      interpolationMode : false,
+      showDetections : false,
+      folderBoundingBox3DArray : [],
+      folderPositionArray : [],
+      folderSizeArray : [],
+      bboxFlag : true,
+      clickFlag : false,
+      clickedObjectIndex : -1,
+      clickedObjectIndexPrevious : -1,
+      mousePos : {x: 0, y: 0},
+      intersectedObject : null,
+      mouseDown : {x: 0, y: 0},
+      mouseUp : {x: 0, y: 0},
+      clickedPoint : THREE.Vector3(),
+      groundPointMouseDown : null,
+      groundPlaneArray : [],
+      clickedPlaneArray : [],
+      birdsEyeViewFlag : true,
+      cls : 0,
+      rotWorldMatrix : null,
+      rotObjectMatrix : null,
+      circleArray : [],
+      colorMap : [],
+      activeColorMap : 'colorMapJet.js',
+      currentPoints3D : [],
+      currentDistances : [],
+      spriteBehindObject : null,
+      pointCloudScanList : [],
+      pointCloudScanNoGroundList : [],
+      pointCloudScan : null,
+      pointCloudScanNoGround : null,
+      useTransformControls : null,
+      dragControls : false,
+      keyboardNavigation : false,
+      canvas3D : null,
+      parametersBoundingBox : {
         "Vehicle": function () {
             classesBoundingBox.select("Vehicle");
             $('#class-picker ul li').css('background-color', '#323232');
@@ -141,98 +149,110 @@ export default class BoundingBox extends Component {
       }
     }
   }
-}
 
 getObjectIndexByTrackIdAndClass = (trackId, className, fileIdx) => {
-    for (let i = 0; i < annotationObjects.contents[fileIdx].length; i++) {
-        let obj = annotationObjects.contents[fileIdx][i];
-        if (obj["trackId"] === trackId && obj["class"] === className) {
-            return i;
-        }
+  for (let i = 0; i < this.props.contents[fileIdx].length; i++) {
+      let obj = this.props.contents[fileIdx][i];
+      if (obj["trackId"] === trackId && obj["class"] === className) {
+          return i;
+      }
+  }
+  return -1;
+}
+
+// labelTool은 base_babel_tools에 있음
+componentDidMount(){
+  this.props.onInitialize("PCD", function () {
+    if (!Detector.webgl) {
+        Detector.addGetWebGLMessage();
     }
-    return -1;
+    this.init();
+    this.animate();
+  });
+
+  // this.loadPCDData();
 }
 
 interpolate = () => {
-    interpolationObjIndexCurrentFile = annotationObjects.getSelectionIndex();
-    let interpolationStartFileIndex = Number(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"]);
+    const interpolationObjIndexCurrentFile = this.props.getSelectionIndex();
+    let interpolationStartFileIndex = Number(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"]);
     if (interpolationStartFileIndex === -1) {
-        labelTool.logger.error("Interpolation failed. Select object to interpolate and try again.");
+        this.props.logger.error("Interpolation failed. Select object to interpolate and try again.");
         return;
     }
     let numFrames = this.state.currentFileIndex - interpolationStartFileIndex;
-    let objectIndexStartFile = this.getObjectIndexByTrackIdAndClass(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], interpolationStartFileIndex);
-    let xDelta = (Number(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["x"]) - Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["x"])) / numFrames;
-    let yDelta = (Number(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["y"]) - Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["y"])) / numFrames;
-    let zDelta = (Number(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["z"]) - Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["z"])) / numFrames;
-    let rotationEnd = Number(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["rotationY"]);
-    let rotationStart = Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["rotationY"]);
+    let objectIndexStartFile = this.getObjectIndexByTrackIdAndClass(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], interpolationStartFileIndex);
+    let xDelta = (Number(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["x"]) - Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["x"])) / numFrames;
+    let yDelta = (Number(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["y"]) - Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["y"])) / numFrames;
+    let zDelta = (Number(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["z"]) - Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["z"])) / numFrames;
+    let rotationEnd = Number(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["rotationY"]);
+    let rotationStart = Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["rotationY"]);
     let rotationDelta = (rotationEnd - rotationStart) / numFrames;
-    let widthDelta = (Number(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["width"]) - Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["width"])) / numFrames;
-    let lengthDelta = (Number(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["length"]) - Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["length"])) / numFrames;
-    let heightDelta = (Number(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["height"]) - Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["height"])) / numFrames;
+    let widthDelta = (Number(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["width"]) - Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["width"])) / numFrames;
+    let lengthDelta = (Number(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["length"]) - Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["length"])) / numFrames;
+    let heightDelta = (Number(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["height"]) - Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["height"])) / numFrames;
 
 
     for (let i = 1; i < numFrames; i++) {
         // cloning
-        let clonedObject = jQuery.extend(true, {}, annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]);
-        let clonedCubeObject = labelTool.cubeArray[interpolationStartFileIndex][objectIndexStartFile].clone();
-        let clonedSprite = labelTool.spriteArray[interpolationStartFileIndex][objectIndexStartFile].clone();
-        let objectIndexNextFrame = this.getObjectIndexByTrackIdAndClass(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], interpolationStartFileIndex + i);
+        let clonedObject = jQuery.extend(true, {}, this.props.contents[interpolationStartFileIndex][objectIndexStartFile]);
+        let clonedCubeObject = this.props.cubeArray[interpolationStartFileIndex][objectIndexStartFile].clone();
+        let clonedSprite = this.props.spriteArray[interpolationStartFileIndex][objectIndexStartFile].clone();
+        let objectIndexNextFrame = this.getObjectIndexByTrackIdAndClass(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], interpolationStartFileIndex + i);
         // use length>2 because 1. element is insertIndex
-        if (annotationObjects.contents[interpolationStartFileIndex + i] !== undefined && annotationObjects.contents[interpolationStartFileIndex + i].length > 0 && objectIndexNextFrame !== -1) {
+        if (this.props.contents[interpolationStartFileIndex + i] !== undefined && this.props.contents[interpolationStartFileIndex + i].length > 0 && objectIndexNextFrame !== -1) {
             // if frame contains some objects, then find object with same trackId and overwrite it
-            annotationObjects.contents[interpolationStartFileIndex + i][objectIndexNextFrame] = clonedObject;
-            labelTool.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame] = clonedCubeObject;
-            labelTool.spriteArray[interpolationStartFileIndex + i][objectIndexNextFrame] = clonedSprite;
+            this.props.contents[interpolationStartFileIndex + i][objectIndexNextFrame] = clonedObject;
+            this.props.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame] = clonedCubeObject;
+            this.props.spriteArray[interpolationStartFileIndex + i][objectIndexNextFrame] = clonedSprite;
         } else {
             // else clone object to new frame and adjusts interpolated position and size
-            annotationObjects.contents[interpolationStartFileIndex + i].push(clonedObject);
-            labelTool.cubeArray[interpolationStartFileIndex + i].push(clonedCubeObject);
-            labelTool.spriteArray[interpolationStartFileIndex + i].push(clonedSprite);
+            this.props.contents[interpolationStartFileIndex + i].push(clonedObject);
+            this.props.cubeArray[interpolationStartFileIndex + i].push(clonedCubeObject);
+            this.props.spriteArray[interpolationStartFileIndex + i].push(clonedSprite);
             // recalculate index in next frame after cloning object
-            objectIndexNextFrame = this.getObjectIndexByTrackIdAndClass(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], interpolationStartFileIndex + i);
+            objectIndexNextFrame = this.getObjectIndexByTrackIdAndClass(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], interpolationStartFileIndex + i);
         }
 
-        let newX = Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["x"]) + i * xDelta;
-        annotationObjects.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["x"] = newX;
-        labelTool.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["position"]["x"] = newX;
+        let newX = Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["x"]) + i * xDelta;
+        this.props.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["x"] = newX;
+        this.props.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["position"]["x"] = newX;
 
-        let newY = Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["y"]) + i * yDelta;
-        annotationObjects.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["y"] = newY;
-        labelTool.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["position"]["y"] = newY;
+        let newY = Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["y"]) + i * yDelta;
+        this.props.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["y"] = newY;
+        this.props.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["position"]["y"] = newY;
 
-        let newZ = Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["z"]) + i * zDelta;
-        annotationObjects.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["z"] = newZ;
-        labelTool.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["position"]["z"] = newZ;
+        let newZ = Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["z"]) + i * zDelta;
+        this.props.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["z"] = newZ;
+        this.props.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["position"]["z"] = newZ;
 
-        let newRotation = Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["rotationY"]) + i * rotationDelta;
-        annotationObjects.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["rotationY"] = newRotation;
-        labelTool.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["rotation"]["z"] = newRotation;
+        let newRotation = Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["rotationY"]) + i * rotationDelta;
+        this.props.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["rotationY"] = newRotation;
+        this.props.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["rotation"]["z"] = newRotation;
 
-        let newWidth = Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["width"]) + i * widthDelta;
-        annotationObjects.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["width"] = newWidth;
-        labelTool.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["scale"]["x"] = newWidth;
+        let newWidth = Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["width"]) + i * widthDelta;
+        this.props.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["width"] = newWidth;
+        this.props.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["scale"]["x"] = newWidth;
 
-        let newLength = Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["length"]) + i * lengthDelta;
-        annotationObjects.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["length"] = newLength;
-        labelTool.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["scale"]["y"] = newLength;
+        let newLength = Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["length"]) + i * lengthDelta;
+        this.props.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["length"] = newLength;
+        this.props.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["scale"]["y"] = newLength;
 
-        let newHeight = Number(annotationObjects.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["height"]) + i * heightDelta;
-        annotationObjects.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["height"] = newHeight;
-        labelTool.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["scale"]["z"] = newHeight;
+        let newHeight = Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["size"]["height"]) + i * heightDelta;
+        this.props.contents[interpolationStartFileIndex + i][objectIndexNextFrame]["height"] = newHeight;
+        this.props.cubeArray[interpolationStartFileIndex + i][objectIndexNextFrame]["scale"]["z"] = newHeight;
     }
 
     // Note: end frame index is the same as current file index
     // start position becomes current end position
-    annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["position"]["x"] = annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["x"];
-    annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["position"]["y"] = annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["y"];
-    annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["position"]["z"] = annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["z"];
-    annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["position"]["rotationY"] = annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["rotationY"];
-    annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["size"]["x"] = annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["x"];
-    annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["size"]["y"] = annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["y"];
-    annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["size"]["z"] = annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["z"];
-    annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"] = this.state.currentFileIndex;
+    this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["position"]["x"] = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["x"];
+    this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["position"]["y"] = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["y"];
+    this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["position"]["z"] = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["z"];
+    this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["position"]["rotationY"] = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["rotationY"];
+    this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["size"]["x"] = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["x"];
+    this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["size"]["y"] = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["y"];
+    this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStart"]["size"]["z"] = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["z"];
+    this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"] = this.state.currentFileIndex;
     // set current frame to start position and start size
     folderPositionArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Position (frame " + (this.state.currentFileIndex + 1) + ")";
     folderSizeArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Size (frame " + (this.state.currentFileIndex + 1) + ")";
@@ -244,7 +264,7 @@ interpolate = () => {
     // disable interpolate button
     this.disableInterpolationBtn();
 
-    labelTool.logger.success("Interpolation successfully!");
+    this.props.logger.success("Interpolation successfully!");
 }
 
 /**
@@ -302,76 +322,70 @@ interpolate = () => {
     }
 }
 
-let parameters = {
-    download_video: function () {
-        downloadVideo();
-    },
-    download: function () {
-        download();
-    },
-    undo: function () {
-        undoOperation();
-    },
-    i: -1,
-    switch_view: function () {
-        switchView();
-    },
-    datasets: this.state.datasets.NuScenes,
-    sequences: "ONE",
-    show_projected_points: false,
-    show_nuscenes_labels: this.state.showOriginalNuScenesLabels,
-    show_field_of_view: false,
-    show_grid: false,
-    filter_ground: false,
-    hide_other_annotations: hideOtherAnnotations,
-    select_all_copy_label_to_next_frame: function () {
-        for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-            annotationObjects.contents[this.state.currentFileIndex][i]["copyLabelToNextFrame"] = true;
-            let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + i);
-            checkboxElem.firstChild.checked = true;
-        }
-    },
-    unselect_all_copy_label_to_next_frame: function () {
-        for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-            // set all to false, expect the selected object (if interpolation mode active)
-            if (interpolationMode === false || i !== annotationObjects.getSelectionIndex()) {
-                annotationObjects.contents[this.state.currentFileIndex][i]["copyLabelToNextFrame"] = false;
-                let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + i);
-                checkboxElem.firstChild.checked = false;
-                $(checkboxElem).children().first().removeAttr("checked");
-            } else {
-                annotationObjects.contents[this.state.currentFileIndex][i]["copyLabelToNextFrame"] = true;
-                let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + i);
-                checkboxElem.firstChild.checked = true;
-            }
-        }
-    },
-    show_detections: false,
-    interpolation_mode: false,
-    interpolate: function () {
-        if (interpolationMode === true) {
-            this.interpolate();
-        }
-    },
-    reset_all: function () {
-        labelTool.resetBoxes()
-    },
-    skip_frames: labelTool.skipFrameCount
-};
+// parameters
+
+// let parameters = {
+//     download_video: function () {
+//         downloadVideo();
+//     },
+//     download: function () {
+//         download();
+//     },
+//     undo: function () {
+//         undoOperation();
+//     },
+//     i: -1,
+//     switch_view: function () {
+//         switchView();
+//     },
+//     datasets: this.state.datasets.NuScenes,
+//     sequences: "ONE",
+//     show_projected_points: false,
+//     show_nuscenes_labels: this.state.showOriginalNuScenesLabels,
+//     show_field_of_view: false,
+//     show_grid: false,
+//     filter_ground: false,
+//     hide_other_annotations: hideOtherAnnotations,
+//     select_all_copy_label_to_next_frame: function () {
+//         for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
+//             annotationObjects.contents[this.state.currentFileIndex][i]["copyLabelToNextFrame"] = true;
+//             let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + i);
+//             checkboxElem.firstChild.checked = true;
+//         }
+//     },
+//     unselect_all_copy_label_to_next_frame: function () {
+//         for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
+//             // set all to false, expect the selected object (if interpolation mode active)
+//             if (interpolationMode === false || i !== annotationObjects.getSelectionIndex()) {
+//                 annotationObjects.contents[this.state.currentFileIndex][i]["copyLabelToNextFrame"] = false;
+//                 let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + i);
+//                 checkboxElem.firstChild.checked = false;
+//                 $(checkboxElem).children().first().removeAttr("checked");
+//             } else {
+//                 annotationObjects.contents[this.state.currentFileIndex][i]["copyLabelToNextFrame"] = true;
+//                 let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + i);
+//                 checkboxElem.firstChild.checked = true;
+//             }
+//         }
+//     },
+//     show_detections: false,
+//     interpolation_mode: false,
+//     interpolate: function () {
+//         if (interpolationMode === true) {
+//             this.interpolate();
+//         }
+//     },
+//     reset_all: function () {
+//         labelTool.resetBoxes()
+//     },
+//     skip_frames: labelTool.skipFrameCount
+// };
 
 /*********** Event handlers **************/
 
-labelTool.onInitialize("PCD", function () {
-    if (!Detector.webgl) {
-        Detector.addGetWebGLMessage();
-    }
-    init();
-    this.animate();
-});
-
 
 // Rotate an object around an arbitrary axis in world space
-function rotateAroundWorldAxis(object, axis, radians) {
+rotateAroundWorldAxis = (object, axis, radians) => {
     rotWorldMatrix = new THREE.Matrix4();
     rotWorldMatrix.makeRotationAxis(axis.normalize(), radians);
 
@@ -385,7 +399,7 @@ function rotateAroundWorldAxis(object, axis, radians) {
 }
 
 
-function rotateAroundObjectAxis(object, axis, radians) {
+rotateAroundObjectAxis = (object, axis, radians) => {
     rotObjectMatrix = new THREE.Matrix4();
     rotObjectMatrix.makeRotationAxis(axis.normalize(), radians);
 
@@ -402,7 +416,7 @@ function rotateAroundObjectAxis(object, axis, radians) {
     object.rotation.setFromRotationMatrix(object.matrix);
 }
 
-PrismGeometry = function (vertices, height) {
+PrismGeometry = (vertices, height) => {
     let shape = new THREE.Shape();
     (function f(ctx) {
 
@@ -420,9 +434,11 @@ PrismGeometry = function (vertices, height) {
     THREE.ExtrudeGeometry.call(this, shape, settings);
 
 };
-PrismGeometry.prototype = Object.create(THREE.ExtrudeGeometry.prototype);
 
-function addObject(sceneObject, name) {
+// PrismGeometry.prototype = Object.create(THREE.ExtrudeGeometry.prototype);
+
+addObject = (sceneObject, name) => {
+  const scene = this.state.scene;
     sceneObject.name = name;
     // search whether object already exist
     for (let i = scene.children.length - 1; i >= 0; i--) {
@@ -434,7 +450,7 @@ function addObject(sceneObject, name) {
     scene.add(sceneObject);
 }
 
-function drawCameraPosition() {
+drawCameraPosition = () => {
     let camFrontGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     camFrontGeometry.translate(-3.402 / 100, 60.7137 / 100, -10.4301 / 100);
     let material = new THREE.MeshBasicMaterial({
@@ -493,17 +509,19 @@ function drawCameraPosition() {
 }
 
 // Visualize 2d and 3d data
-function loadPCDData() {
+loadPCDData = () => {
+    const scene = this.state.scene;
+
     // ASCII pcd files
     let pcdLoader = new THREE.PCDLoader();
     let pointCloudFullURL;
     let pointCloudWithoutGroundURL;
-    pointCloudWithoutGroundURL = 'input/' + this.state.currentDataset + '/' + labelTool.currentSequence + '/' + 'pointclouds_without_ground/' + this.state.fileNames[this.state.currentFileIndex] + '.pcd';
+    pointCloudWithoutGroundURL = 'input/' + this.state.currentDataset + '/' + this.state.currentSequence + '/' + 'pointclouds_without_ground/' + this.state.fileNames[this.state.currentFileIndex] + '.pcd';
 
     // load all point cloud scans in the beginning
-    if (labelTool.pointCloudLoaded === false) {
+    if (this.props.pointCloudLoaded === false) {
         for (let i = 0; i < this.state.numFrames; i++) {
-            pointCloudFullURL = 'input/' + this.state.currentDataset + '/' + labelTool.currentSequence + '/' + 'pointclouds/' + this.state.fileNames[i] + '.pcd';
+            pointCloudFullURL = 'input/' + this.state.currentDataset + '/' + this.state.currentSequence + '/' + 'pointclouds/' + this.state.fileNames[i] + '.pcd';
             pcdLoader.load(pointCloudFullURL, function (mesh) {
                 mesh.name = 'pointcloud-scan-' + i;
                 pointCloudScanList.push(mesh);
@@ -516,43 +534,78 @@ function loadPCDData() {
                 pointCloudScanNoGroundList.push(mesh);
             });
         }
-        labelTool.pointCloudLoaded = true;
+        this.props.pointCloudLoaded = true;
     } else {
         scene.add(pointCloudScanList[this.state.currentFileIndex]);
     }
 
 
     // show FOV of camera within 3D pointcloud
-    labelTool.removeObject('rightplane');
-    labelTool.removeObject('leftplane');
-    labelTool.removeObject('prism');
-    if (labelTool.showFieldOfView === true) {
-        labelTool.drawFieldOfView();
+    this.props.removeObject('rightplane');
+    this.props.removeObject('leftplane');
+    this.props.removeObject('prism');
+    if (this.props.showFieldOfView === true) {
+      this.props.drawFieldOfView();
     }
 
     // draw positions of cameras
-    if (labelTool.showCameraPosition === true) {
+    if (this.props.showCameraPosition === true) {
         drawCameraPosition();
     }
 
+    // let mtlLoader = new MTLLoader();
+    // let objLoader = new OBJLoader();
+
     // draw ego vehicle
-    let lexusTexture = new THREE.TextureLoader().load('assets/models/lexus/lexus.jpg');
+    let lexusTexture = new THREE.TextureLoader().load('./assets/models/lexus/lexus.jpg');
     let lexusMaterial = new THREE.MeshBasicMaterial({map: lexusTexture});
+    console.log("lexusTexture",lexusTexture)
+
+    this.loadObjModel(lexusMaterial, './assets/models/lexus/lexus_hs.obj');
+
     let objLoader = new THREE.OBJLoader();
-    objLoader.load('assets/models/lexus/lexus_hs.obj', function (object) {
+    objLoader.load('./assets/models/lexus/lexus_hs.obj', function (object) {
         let lexusGeometry = object.children[0].geometry;
         let lexusMesh = new THREE.Mesh(lexusGeometry, lexusMaterial);
 
         lexusMesh.scale.set(0.065, 0.065, 0.065);
         lexusMesh.rotation.set(0, 0, -Math.PI / 2);
-        lexusMesh.position.set(0, 0, -labelTool.positionLidarNuscenes[2]);
+        lexusMesh.position.set(0, 0, -this.props.positionLidarNuscenes[2]);
 
         scene.add(lexusMesh)
     });
 }
 
+loadObjModel = (materialURL, objectURL) => {
+  new MTLLoader().load(materialURL, materials => {
+    materials.preload();
+    //materials.Material.side = THREE.DoubleSide;
+    console.log("Loaded Materials");
+    var objLoader = new OBJLoader();
+    objLoader.setMaterials(materials);
+    objLoader.load(
+      objectURL,
+      object => {
+        //const root = object.detail.loaderRootNode;
+        console.log("Loaded Obj" + object);
+        let mesh = object;
+        this.scene.add(object);
+        mesh.position.set(0, 0, 0);
+        mesh.scale.set(0.07, 0.07, 0.07);
+      },
+      xhr => {
+        console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+      },
+      // called when loading has errors
+      error => {
+        console.log("An error happened" + error);
+      }
+    );
+  });
+};
 
-annotationObjects.onSelect("PCD", function (selectionIndex) {
+// this.props.onSelect = ("PCD", (selectionIndex) => {
+  onSelect = ("PCD", (selectionIndex) => {
     clickedPlaneArray = [];
     for (let i = 0; i < folderBoundingBox3DArray.length; i++) {
         if (folderBoundingBox3DArray[i] !== undefined) {
@@ -568,31 +621,33 @@ annotationObjects.onSelect("PCD", function (selectionIndex) {
     if (folderSizeArray[selectionIndex] !== undefined) {
         folderSizeArray[selectionIndex].open();
     }
-});
+  });
 
-
-annotationObjects.onChangeClass("PCD", function (index, label) {
-    labelTool.cubeArray[this.state.currentFileIndex][index].material.color.setHex(classesBoundingBox[label].color.replace("#", "0x"));
+// boundingbox에서 불럼
+// annotationObjects.onChangeClass("PCD", function (index, label) {
+onChangeClass = ("PCD", (index, label) => {
+  this.props.cubeArray[this.state.currentFileIndex][index].material.color.setHex(classesBoundingBox[label].color.replace("#", "0x"));
     // change also color of the bounding box
-    labelTool.cubeArray[this.state.currentFileIndex][index].children[0].material.color.setHex(classesBoundingBox[label].color.replace("#", "0x"));
-    annotationObjects.contents[this.state.currentFileIndex][index]["class"] = label;
+    this.props.cubeArray[this.state.currentFileIndex][index].children[0].material.color.setHex(classesBoundingBox[label].color.replace("#", "0x"));
+    this.props.contents[this.state.currentFileIndex][index]["class"] = label;
 });
 
 //add remove function in dat.GUI
-dat.GUI.prototype.removeFolder = function (name) {
-    let folder = this.__folders[name];
-    if (!folder) {
-        return;
-    }
+// 임시 생략 - 고쳐야함
+// dat.GUI.prototype.removeFolder = function (name) {
+//     let folder = this.__folders[name];
+//     if (!folder) {
+//         return;
+//     }
 
-    folder.close();
-    this.__ul.removeChild(folder.domElement.parentNode);
-    delete this.__folders[name];
-    this.onResize();
-};
+//     folder.close();
+//     this.__ul.removeChild(folder.domElement.parentNode);
+//     delete this.__folders[name];
+//     this.onResize();
+// };
 
 //calculate inverse matrix
-function inverseMatrix(inMax) {
+inverseMatrix = (inMax) => {
     let det = (inMax[0][0] * inMax[1][1] * inMax[2][2] * inMax[3][3]) + (inMax[0][0] * inMax[1][2] * inMax[2][3] * inMax[3][1]) + (inMax[0][0] * inMax[1][3] * inMax[2][1] * inMax[3][2])
         - (inMax[0][0] * inMax[1][3] * inMax[2][2] * inMax[3][1]) - (inMax[0][0] * inMax[1][2] * inMax[2][1] * inMax[3][3]) - (inMax[0][0] * inMax[1][1] * inMax[2][3] * inMax[3][2])
         - (inMax[0][1] * inMax[1][0] * inMax[2][2] * inMax[3][3]) - (inMax[0][2] * inMax[1][0] * inMax[2][3] * inMax[3][1]) - (inMax[0][3] * inMax[1][0] * inMax[2][1] * inMax[3][2])
@@ -621,7 +676,7 @@ function inverseMatrix(inMax) {
     return [[inv00, inv01, inv02, inv03], [inv10, inv11, inv12, inv13], [inv20, inv21, inv22, inv23], [inv30, inv31, inv32, inv33]]
 }
 
-function b64EncodeUnicode(str) {
+b64EncodeUnicode = (str) => {
     // first we use encodeURIComponent to get percent-encoded UTF-8,
     // then we convert the percent encodings into raw bytes which
     // can be fed into btoa.
@@ -634,7 +689,7 @@ function b64EncodeUnicode(str) {
 // right padding s with c to a total of n chars
 // print 0.12300
 // alert(padding_right('0.123', '0', 5));
-function paddingRight(s, c, n) {
+paddingRight = (s, c, n) => {
     if (!s || !c || s.length >= n) {
         return s;
     }
@@ -645,42 +700,42 @@ function paddingRight(s, c, n) {
     return s;
 }
 
-function download() {
-    let annotations = labelTool.createAnnotations();
+download = () => {
+    let annotations = this.props.createAnnotations();
     let outputString = JSON.stringify(annotations);
     outputString = b64EncodeUnicode(outputString);
-    $($('#bounding-box-3d-menu ul li')[0]).children().first().attr('href', 'data:application/octet-stream;base64,' + outputString).attr('download', this.state.currentDataset + "_" + labelTool.currentSequence + '_annotations.txt');
+    $($('#bounding-box-3d-menu ul li')[0]).children().first().attr('href', 'data:application/octet-stream;base64,' + outputString).attr('download', this.state.currentDataset + "_" + this.state.currentSequence + '_annotations.txt');
 }
 
 // TODO: test
-function downloadVideo() {
+downloadVideo = () => {
     if (this.state.currentDataset === this.state.datasets.NuScenes) {
-        labelTool.takeCanvasScreenshot = true;
-        labelTool.changeFrame(0);
+      this.props.takeCanvasScreenshot = true;
+      this.props.changeFrame(0);
         initScreenshotTimer();
     }
 }
 
-function hideMasterView() {
+hideMasterView = () => {
     $("#canvasSideView").hide();
     $("#canvasFrontView").hide();
     $("#canvasBev").hide();
 }
 
 //change camera position to bird view position
-function switchView() {
+switchView = () => {
     birdsEyeViewFlag = !birdsEyeViewFlag;
     if (transformControls !== undefined) {
-        labelTool.selectedMesh = undefined;
+      this.props.selectedMesh = undefined;
         transformControls.detach();
         transformControls = undefined;
         hideMasterView();
     }
     setCamera();
-    labelTool.removeObject("planeObject");
+    this.props.removeObject("planeObject");
 }
 
-function increaseBrightness(hex, percent) {
+increaseBrightness = (hex, percent) => {
     // strip the leading # if it's there
     hex = hex.replace(/^\s*#|\s*$/g, '');
 
@@ -700,7 +755,8 @@ function increaseBrightness(hex, percent) {
 }
 
 
-function addClassTooltip(fileIndex, className, trackId, color, bbox) {
+addClassTooltip = (fileIndex, className, trackId, color, bbox) => {
+    const scene = this.state.scene;
     let classTooltipElement = $("<div class='class-tooltip' id='tooltip-" + className.charAt(0) + trackId + "'>" + trackId + "</div>");
     // Sprite
     const spriteMaterial = new THREE.SpriteMaterial({
@@ -719,10 +775,11 @@ function addClassTooltip(fileIndex, className, trackId, color, bbox) {
         $("body").append(classTooltipElement);
         scene.add(sprite);
     }
-    labelTool.spriteArray[fileIndex].push(sprite);
+    this.props.spriteArray[fileIndex].push(sprite);
 }
 
-function get3DLabel(parameters) {
+// boundingbox에 해당 함수 사용
+get3DLabel = (parameters) => {
     let bbox = parameters;
     let cubeGeometry = new THREE.BoxBufferGeometry(1.0, 1.0, 1.0);//width, length, height
     let color;
@@ -763,23 +820,23 @@ function get3DLabel(parameters) {
     }
     // class tooltip
     addClassTooltip(parameters.fileIndex, parameters.class, parameters.trackId, color, bbox);
-    labelTool.cubeArray[parameters.fileIndex].push(cubeMesh);
+    this.props.cubeArray[parameters.fileIndex].push(cubeMesh);
     return bbox;
 }
 
-function update2DBoundingBox(fileIndex, objectIndex, isSelected) {
-    let className = annotationObjects.contents[fileIndex][objectIndex].class;
-    for (let channelObject in annotationObjects.contents[fileIndex][objectIndex].channels) {
-        if (annotationObjects.contents[fileIndex][objectIndex].channels.hasOwnProperty(channelObject)) {
-            let channelObj = annotationObjects.contents[fileIndex][objectIndex].channels[channelObject];
+update2DBoundingBox = (fileIndex, objectIndex, isSelected) => {
+    let className = this.props.contents[fileIndex][objectIndex].class;
+    for (let channelObject in this.props.contents[fileIndex][objectIndex].channels) {
+        if (this.props.contents[fileIndex][objectIndex].channels.hasOwnProperty(channelObject)) {
+            let channelObj = this.props.contents[fileIndex][objectIndex].channels[channelObject];
             if (channelObj.channel !== '') {
-                let x = annotationObjects.contents[fileIndex][objectIndex]["x"];
-                let y = annotationObjects.contents[fileIndex][objectIndex]["y"];
-                let z = annotationObjects.contents[fileIndex][objectIndex]["z"];
-                let width = annotationObjects.contents[fileIndex][objectIndex]["width"];
-                let length = annotationObjects.contents[fileIndex][objectIndex]["length"];
-                let height = annotationObjects.contents[fileIndex][objectIndex]["height"];
-                let rotationY = annotationObjects.contents[fileIndex][objectIndex]["rotationY"];
+                let x = this.props.contents[fileIndex][objectIndex]["x"];
+                let y = this.props.contents[fileIndex][objectIndex]["y"];
+                let z = this.props.contents[fileIndex][objectIndex]["z"];
+                let width = this.props.contents[fileIndex][objectIndex]["width"];
+                let length = this.props.contents[fileIndex][objectIndex]["length"];
+                let height = this.props.contents[fileIndex][objectIndex]["height"];
+                let rotationY = this.props.contents[fileIndex][objectIndex]["rotationY"];
                 let channel = channelObj.channel;
                 channelObj.projectedPoints = calculateProjectedBoundingBox(x, y, z, width, length, height, channel, rotationY);
                 // remove previous drawn lines of all 6 channels
@@ -812,23 +869,23 @@ function update2DBoundingBox(fileIndex, objectIndex, isSelected) {
 // }
 // }
 
-function updateXPos(newFileIndex, value) {
-    labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.x = value;
-    annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["x"] = value;
-    annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["x"] = value;
+updateXPos = (newFileIndex, value) => {
+  this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.x = value;
+  this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["x"] = value;
+  this.props.contents[newFileIndex][interpolationObjIndexNextFile]["x"] = value;
     // update bounding box
-    update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
+    this.update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
 }
 
 /**
  * calculates the highest available track id for a specific class
  * @param label
  */
-function setHighestAvailableTrackId(label) {
-    for (let newTrackId = 1; newTrackId <= annotationObjects.contents[this.state.currentFileIndex].length; newTrackId++) {
+ setHighestAvailableTrackId = (label) => {
+    for (let newTrackId = 1; newTrackId <= this.props.contents[this.state.currentFileIndex].length; newTrackId++) {
         let exist = false;
-        for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-            if (label === annotationObjects.contents[this.state.currentFileIndex][i]["class"] && newTrackId === annotationObjects.contents[this.state.currentFileIndex][i]["trackId"]) {
+        for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+            if (label === this.props.contents[this.state.currentFileIndex][i]["class"] && newTrackId === this.props.contents[this.state.currentFileIndex][i]["trackId"]) {
                 exist = true;
                 break;
             }
@@ -843,20 +900,20 @@ function setHighestAvailableTrackId(label) {
             break;
         }
         if (this.state.showOriginalNuScenesLabels === true) {
-            classesBoundingBox.content[label].nextTrackId = annotationObjects.contents[this.state.currentFileIndex].length + 1;
+            classesBoundingBox.content[label].nextTrackId = this.props.contents[this.state.currentFileIndex].length + 1;
         } else {
-            classesBoundingBox[label].nextTrackId = annotationObjects.contents[this.state.currentFileIndex].length + 1;
+            classesBoundingBox[label].nextTrackId = this.props.contents[this.state.currentFileIndex].length + 1;
         }
     }
 }
 
-function getSmallestTrackId(classNameToFind) {
+getSmallestTrackId = (classNameToFind) => {
     let trackIds = [];
-    for (let i = 0; i < annotationObjects.contents.length; i++) {
-        for (let j = 0; j < annotationObjects.contents[i].length; j++) {
-            let className = annotationObjects.contents[i][j]["class"];
+    for (let i = 0; i < this.props.contents.length; i++) {
+        for (let j = 0; j < this.props.contents[i].length; j++) {
+            let className = this.props.contents[i][j]["class"];
             if (className === classNameToFind) {
-                let trackId = annotationObjects.contents[i][j]["trackId"];
+                let trackId = this.props.contents[i][j]["trackId"];
                 if ($.inArray(trackId, trackIds) === -1) {
                     trackIds.push(trackId);
                 }
@@ -881,17 +938,17 @@ function getSmallestTrackId(classNameToFind) {
     return trackIds[trackIds.length - 1] + 1;
 }
 
-function deleteObject(bboxClass, trackId, labelIndex) {
+deleteObject = (bboxClass, trackId, labelIndex) => {
     guiOptions.removeFolder(bboxClass + ' ' + trackId);
     // hide 3D bounding box instead of removing it (in case redo button will be pressed)
     if (transformControls !== undefined) {
         transformControls.detach();
     }
 
-    labelTool.removeObject("transformControls");
+    this.props.removeObject("transformControls");
     // NOTE: already removed in annotationObjects.remove()
     //labelTool.cubeArray[this.state.currentFileIndex].splice(labelIndex, 1);
-    let channels = annotationObjects.contents[this.state.currentFileIndex][labelIndex].channels;
+    let channels = this.props.contents[this.state.currentFileIndex][labelIndex].channels;
     // iterate all channels and remove projection
     for (let channelIdx in channels) {
         if (channels.hasOwnProperty(channelIdx)) {
@@ -906,23 +963,23 @@ function deleteObject(bboxClass, trackId, labelIndex) {
             }
         }
     }
-    annotationObjects.remove(labelIndex);
+    this.props.remove(labelIndex);
     folderBoundingBox3DArray.splice(labelIndex, 1);
     folderPositionArray.splice(labelIndex, 1);
     folderSizeArray.splice(labelIndex, 1);
-    annotationObjects.selectEmpty();
-    labelTool.spriteArray[this.state.currentFileIndex].splice(labelIndex, 1);
-    labelTool.removeObject("sprite-" + bboxClass.charAt(0) + trackId);
+    this.props.selectEmpty();
+    this.props.spriteArray[this.state.currentFileIndex].splice(labelIndex, 1);
+    this.props.removeObject("sprite-" + bboxClass.charAt(0) + trackId);
     // NOTE: already removed in annotationObjects.remove()
     //labelTool.removeObject("cube-" + bboxClass.charAt(0) + trackId);
     // remove sprite from DOM tree
     $("#tooltip-" + bboxClass.charAt(0) + trackId).remove();
-    labelTool.selectedMesh = undefined;
+    this.props.selectedMesh = undefined;
     // reduce track id by 1 for this class
     if (this.state.showOriginalNuScenesLabels) {
         classesBoundingBox.content[bboxClass].nextTrackId--;
     } else {
-        if (labelIndex === annotationObjects.contents[this.state.currentFileIndex].length) {
+        if (labelIndex === this.props.contents[this.state.currentFileIndex].length) {
             // decrement track id if the last object in the list was deleted
             classesBoundingBox[bboxClass].nextTrackId--;
         } else {
@@ -931,7 +988,7 @@ function deleteObject(bboxClass, trackId, labelIndex) {
         }
     }
     // if last object in current frame was deleted than disable interpolation mode
-    if (annotationObjects.contents[this.state.currentFileIndex].length === 0) {
+    if (this.props.contents[this.state.currentFileIndex].length === 0) {
         interpolationMode = false;
         $("#interpolation-checkbox").children().first().prop("checked", false);
         $("#interpolation-checkbox").children().first().removeAttr("checked");
@@ -939,7 +996,7 @@ function deleteObject(bboxClass, trackId, labelIndex) {
     //rename all ids following after insertIndexof
     // e.g. rename copy-label-to-next-frame-checkbox-1 to copy-label-to-next-frame-checkbox-0 if deleting first element
     let copyIdList = document.querySelectorAll('[id^="copy-label-to-next-frame-checkbox-"]'); // e.g. 0,1
-    for (let i = labelIndex; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
+    for (let i = labelIndex; i < this.props.contents[this.state.currentFileIndex].length; i++) {
         let idToChange = copyIdList[i].id;
         let elem = document.getElementById(idToChange);
         elem.id = "copy-label-to-next-frame-checkbox-" + (i);
@@ -950,11 +1007,11 @@ function deleteObject(bboxClass, trackId, labelIndex) {
     $("#canvasFrontView").hide();
     // move class picker to left
     $("#class-picker").css("left", 10);
-    annotationObjects.__selectionIndexCurrentFrame = -1;
+    this.props.__selectionIndexCurrentFrame = -1;
 }
 
 //register new bounding box
-function addBoundingBoxGui(bbox, bboxEndParams) {
+addBoundingBoxGui = (bbox, bboxEndParams) => {
     let insertIndex = folderBoundingBox3DArray.length;
     let bb = guiOptions.addFolder(bbox.class + ' ' + bbox.trackId);
     folderBoundingBox3DArray.push(bb);
@@ -986,117 +1043,117 @@ function addBoundingBoxGui(bbox, bboxEndParams) {
             // Note: Do not use insertIndex because it might change (if deleting e.g. an object in between)
             // use track id and class to calculate selection index
             let selectionIndex = this.getObjectIndexByTrackIdAndClass(bbox.trackId, bbox.class, this.state.currentFileIndex);
-            labelTool.cubeArray[this.state.currentFileIndex][selectionIndex].position.x = value;
-            annotationObjects.contents[this.state.currentFileIndex][selectionIndex]["x"] = value;
+            this.props.cubeArray[this.state.currentFileIndex][selectionIndex].position.x = value;
+            this.props.contents[this.state.currentFileIndex][selectionIndex]["x"] = value;
             // update bounding box
-            update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
+            this.update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
         }
     });
     cubeY.onChange(function (value) {
         if (value >= minYPos && value < maxYPos) {
             let selectionIndex = this.getObjectIndexByTrackIdAndClass(bbox.trackId, bbox.class, this.state.currentFileIndex);
-            labelTool.cubeArray[this.state.currentFileIndex][selectionIndex].position.y = value;
-            annotationObjects.contents[this.state.currentFileIndex][selectionIndex]["y"] = value;
+            this.props.cubeArray[this.state.currentFileIndex][selectionIndex].position.y = value;
+            this.props.contents[this.state.currentFileIndex][selectionIndex]["y"] = value;
             // update bounding box
-            update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
+            this.update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
         }
     });
     cubeZ.onChange(function (value) {
         if (value >= minZPos && value < maxZPos) {
             let selectionIndex = this.getObjectIndexByTrackIdAndClass(bbox.trackId, bbox.class, this.state.currentFileIndex);
-            labelTool.cubeArray[this.state.currentFileIndex][selectionIndex].position.z = value;
-            annotationObjects.contents[this.state.currentFileIndex][selectionIndex]["z"] = value;
+            this.props.cubeArray[this.state.currentFileIndex][selectionIndex].position.z = value;
+            this.props.contents[this.state.currentFileIndex][selectionIndex]["z"] = value;
             // update bounding box
-            update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
+            this.update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
         }
     });
     cubeYaw.onChange(function (value) {
         let selectionIndex = this.getObjectIndexByTrackIdAndClass(bbox.trackId, bbox.class, this.state.currentFileIndex);
-        labelTool.cubeArray[this.state.currentFileIndex][selectionIndex].rotation.z = value;
-        annotationObjects.contents[this.state.currentFileIndex][selectionIndex]["rotationY"] = value;
+        this.props.cubeArray[this.state.currentFileIndex][selectionIndex].rotation.z = value;
+        this.props.contents[this.state.currentFileIndex][selectionIndex]["rotationY"] = value;
         // update bounding box
-        update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
+        this.update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
     });
     cubeWidth.onChange(function (value) {
         for (let i = 0; i < this.state.numFrames; i++) {
             let selectionIndex = this.getObjectIndexByTrackIdAndClass(bbox.trackId, bbox.class, i);
             if (selectionIndex !== -1) {
-                let newXPos = labelTool.cubeArray[i][selectionIndex].position.x + (value - labelTool.cubeArray[i][selectionIndex].scale.x) * Math.cos(labelTool.cubeArray[i][selectionIndex].rotation.z) / 2;
-                labelTool.cubeArray[i][selectionIndex].position.x = newXPos;
+                let newXPos = this.props.cubeArray[i][selectionIndex].position.x + (value - this.props.cubeArray[i][selectionIndex].scale.x) * Math.cos(this.props.cubeArray[i][selectionIndex].rotation.z) / 2;
+                this.props.cubeArray[i][selectionIndex].position.x = newXPos;
                 if (i === this.state.currentFileIndex) {
                     bbox.x = newXPos;
                 }
-                annotationObjects.contents[i][selectionIndex]["x"] = newXPos;
-                let newYPos = labelTool.cubeArray[i][selectionIndex].position.y + (value - labelTool.cubeArray[i][selectionIndex].scale.x) * Math.sin(labelTool.cubeArray[i][selectionIndex].rotation.z) / 2;
-                labelTool.cubeArray[i][selectionIndex].position.y = newYPos;
+                this.props.contents[i][selectionIndex]["x"] = newXPos;
+                let newYPos = this.props.cubeArray[i][selectionIndex].position.y + (value - this.props.cubeArray[i][selectionIndex].scale.x) * Math.sin(this.props.cubeArray[i][selectionIndex].rotation.z) / 2;
+                this.props.cubeArray[i][selectionIndex].position.y = newYPos;
                 if (i === this.state.currentFileIndex) {
                     bbox.y = newYPos;
                 }
-                annotationObjects.contents[i][selectionIndex]["y"] = newYPos;
-                labelTool.cubeArray[i][selectionIndex].scale.x = value;
-                annotationObjects.contents[i][selectionIndex]["width"] = value;
+                this.props.contents[i][selectionIndex]["y"] = newYPos;
+                this.props.cubeArray[i][selectionIndex].scale.x = value;
+                this.props.contents[i][selectionIndex]["width"] = value;
             }
         }
         let selectionIndexCurrentFrame = this.getObjectIndexByTrackIdAndClass(bbox.trackId, bbox.class, this.state.currentFileIndex);
-        update2DBoundingBox(this.state.currentFileIndex, selectionIndexCurrentFrame, true);
+        this.update2DBoundingBox(this.state.currentFileIndex, selectionIndexCurrentFrame, true);
     });
     cubeLength.onChange(function (value) {
         for (let i = 0; i < this.state.numFrames; i++) {
             let selectionIndex = this.getObjectIndexByTrackIdAndClass(bbox.trackId, bbox.class, i);
             if (selectionIndex !== -1) {
-                let newXPos = labelTool.cubeArray[i][selectionIndex].position.x + (value - labelTool.cubeArray[i][selectionIndex].scale.y) * Math.sin(labelTool.cubeArray[i][selectionIndex].rotation.z) / 2;
-                labelTool.cubeArray[i][selectionIndex].position.x = newXPos;
+                let newXPos = this.props.cubeArray[i][selectionIndex].position.x + (value - this.props.cubeArray[i][selectionIndex].scale.y) * Math.sin(this.props.cubeArray[i][selectionIndex].rotation.z) / 2;
+                this.props.cubeArray[i][selectionIndex].position.x = newXPos;
                 bbox.x = newXPos;
-                annotationObjects.contents[i][selectionIndex]["x"] = newXPos;
-                let newYPos = labelTool.cubeArray[i][selectionIndex].position.y - (value - labelTool.cubeArray[i][selectionIndex].scale.y) * Math.cos(labelTool.cubeArray[i][selectionIndex].rotation.z) / 2;
-                labelTool.cubeArray[i][selectionIndex].position.y = newYPos;
+                this.props.contents[i][selectionIndex]["x"] = newXPos;
+                let newYPos = this.props.cubeArray[i][selectionIndex].position.y - (value - this.props.cubeArray[i][selectionIndex].scale.y) * Math.cos(this.props.cubeArray[i][selectionIndex].rotation.z) / 2;
+                this.props.cubeArray[i][selectionIndex].position.y = newYPos;
                 bbox.y = newYPos;
-                annotationObjects.contents[i][selectionIndex]["y"] = newYPos;
-                labelTool.cubeArray[i][selectionIndex].scale.y = value;
-                annotationObjects.contents[i][selectionIndex]["length"] = value;
+                this.props.contents[i][selectionIndex]["y"] = newYPos;
+                this.props.cubeArray[i][selectionIndex].scale.y = value;
+                this.props.contents[i][selectionIndex]["length"] = value;
             }
         }
         let selectionIndexCurrent = this.getObjectIndexByTrackIdAndClass(bbox.trackId, bbox.class, this.state.currentFileIndex);
-        update2DBoundingBox(this.state.currentFileIndex, selectionIndexCurrent, true);
+        this.update2DBoundingBox(this.state.currentFileIndex, selectionIndexCurrent, true);
     });
     cubeHeight.onChange(function (value) {
         for (let i = 0; i < this.state.numFrames; i++) {
             let selectionIndex = this.getObjectIndexByTrackIdAndClass(bbox.trackId, bbox.class, i);
-            let newZPos = labelTool.cubeArray[i][selectionIndex].position.z + (value - labelTool.cubeArray[i][selectionIndex].scale.z) / 2;
-            labelTool.cubeArray[i][selectionIndex].position.z = newZPos;
+            let newZPos = this.props.cubeArray[i][selectionIndex].position.z + (value - this.props.cubeArray[i][selectionIndex].scale.z) / 2;
+            this.props.cubeArray[i][selectionIndex].position.z = newZPos;
             bbox.z = newZPos;
-            labelTool.cubeArray[i][selectionIndex].scale.z = value;
-            annotationObjects.contents[i][selectionIndex]["height"] = value;
+            this.props.cubeArray[i][selectionIndex].scale.z = value;
+            this.props.contents[i][selectionIndex]["height"] = value;
         }
         let selectionIndexCurrent = this.getObjectIndexByTrackIdAndClass(bbox.trackId, bbox.class, this.state.currentFileIndex);
-        update2DBoundingBox(this.state.currentFileIndex, selectionIndexCurrent, true);
+        this.update2DBoundingBox(this.state.currentFileIndex, selectionIndexCurrent, true);
 
     });
 
     if (bboxEndParams !== undefined && interpolationMode === true) {
         //interpolationObjIndexCurrentFile = annotationObjects.getSelectionIndex();
-        interpolationObjIndexNextFile = this.getObjectIndexByTrackIdAndClass(annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], bboxEndParams.newFileIndex);
+        interpolationObjIndexNextFile = this.getObjectIndexByTrackIdAndClass(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], bboxEndParams.newFileIndex);
         // change text
-        let interpolationStartFileIndex = annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"];
+        let interpolationStartFileIndex = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"];
         folderPositionArray[interpolationObjIndexNextFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Position (frame " + interpolationStartFileIndex + ")";
         folderSizeArray[interpolationObjIndexNextFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Size (frame " + interpolationStartFileIndex + ")";
 
         if (interpolationStartFileIndex !== bboxEndParams.newFileIndex) {
             disableStartPositionAndSize();
             // add folders for end position and end size
-            labelTool.folderEndPosition = folderBoundingBox3DArray[interpolationObjIndexNextFile].addFolder("Interpolation End Position (frame " + (this.state.currentFileIndex + 1) + ")");
-            let cubeEndX = labelTool.folderEndPosition.add(bboxEndParams, 'x').name("x").min(minXPos).max(maxXPos).step(0.01).listen();
-            let cubeEndY = labelTool.folderEndPosition.add(bboxEndParams, 'y').name("y").min(minYPos).max(maxYPos).step(0.01).listen();
-            let cubeEndZ = labelTool.folderEndPosition.add(bboxEndParams, 'z').name("z)").min(minZPos).max(maxZPos).step(0.01).listen();
-            let cubeEndYaw = labelTool.folderEndPosition.add(bboxEndParams, 'rotationY').name("rotation").min(-Math.PI).max(Math.PI).step(0.01).listen();
-            labelTool.folderEndPosition.domElement.id = 'interpolation-end-position-folder';
-            labelTool.folderEndPosition.open();
-            labelTool.folderEndSize = folderBoundingBox3DArray[interpolationObjIndexNextFile].addFolder("Interpolation End Size (frame " + (this.state.currentFileIndex + 1) + ")");
-            let cubeEndWidth = labelTool.folderEndSize.add(bboxEndParams, 'width').name("width").min(0.3).max(20).step(0.01).listen();
-            let cubeEndLength = labelTool.folderEndSize.add(bboxEndParams, 'length').name("length").min(0.3).max(20).step(0.01).listen();
-            let cubeEndHeight = labelTool.folderEndSize.add(bboxEndParams, 'height').name("height").min(0.3).max(20).step(0.01).listen();
-            labelTool.folderEndPosition.domElement.id = 'interpolation-end-size-folder';
-            labelTool.folderEndSize.open();
+            this.props.folderEndPosition = folderBoundingBox3DArray[interpolationObjIndexNextFile].addFolder("Interpolation End Position (frame " + (this.state.currentFileIndex + 1) + ")");
+            let cubeEndX = this.props.folderEndPosition.add(bboxEndParams, 'x').name("x").min(minXPos).max(maxXPos).step(0.01).listen();
+            let cubeEndY = this.props.folderEndPosition.add(bboxEndParams, 'y').name("y").min(minYPos).max(maxYPos).step(0.01).listen();
+            let cubeEndZ = this.props.folderEndPosition.add(bboxEndParams, 'z').name("z)").min(minZPos).max(maxZPos).step(0.01).listen();
+            let cubeEndYaw = this.props.folderEndPosition.add(bboxEndParams, 'rotationY').name("rotation").min(-Math.PI).max(Math.PI).step(0.01).listen();
+            this.props.folderEndPosition.domElement.id = 'interpolation-end-position-folder';
+            this.props.folderEndPosition.open();
+            this.props.folderEndSize = folderBoundingBox3DArray[interpolationObjIndexNextFile].addFolder("Interpolation End Size (frame " + (this.state.currentFileIndex + 1) + ")");
+            let cubeEndWidth = this.props.folderEndSize.add(bboxEndParams, 'width').name("width").min(0.3).max(20).step(0.01).listen();
+            let cubeEndLength = this.props.folderEndSize.add(bboxEndParams, 'length').name("length").min(0.3).max(20).step(0.01).listen();
+            let cubeEndHeight = this.props.folderEndSize.add(bboxEndParams, 'height').name("height").min(0.3).max(20).step(0.01).listen();
+            this.props.folderEndPosition.domElement.id = 'interpolation-end-size-folder';
+            this.props.folderEndSize.open();
             let newFileIndex = bboxEndParams.newFileIndex;
 
             cubeEndX.onChange(function (value) {
@@ -1106,74 +1163,74 @@ function addBoundingBoxGui(bbox, bboxEndParams) {
             });
             cubeEndY.onChange(function (value) {
                 if (value >= minYPos && value < maxYPos) {
-                    labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.y = value;
-                    annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["y"] = value;
-                    annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["y"] = value;
+                  this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.y = value;
+                  this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["y"] = value;
+                  this.props.contents[newFileIndex][interpolationObjIndexNextFile]["y"] = value;
                     // update bounding box
-                    update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
+                    this.update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
                 }
             });
             cubeEndZ.onChange(function (value) {
                 if (value >= minZPos && value < maxZPos) {
-                    labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.z = value;
-                    annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["z"] = value;
-                    annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["z"] = value;
+                  this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.z = value;
+                  this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["z"] = value;
+                  this.props.contents[newFileIndex][interpolationObjIndexNextFile]["z"] = value;
                     // update bounding box
-                    update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
+                    this.update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
                 }
             });
             cubeEndYaw.onChange(function (value) {
-                labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].rotation.z = value;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["rotationY"] = value;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["rotationY"] = value;
+              this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].rotation.z = value;
+              this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["rotationY"] = value;
+              this.props.contents[newFileIndex][interpolationObjIndexNextFile]["rotationY"] = value;
                 // update bounding box
-                update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
+                this.update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
             });
             cubeEndWidth.onChange(function (value) {
-                let newXPos = labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.x + (value - labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.x)
-                    * Math.cos(labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].rotation.z) / 2;
-                labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.x = newXPos;
-                labelTool.cubeArray[this.state.currentFileIndex][interpolationObjIndexCurrentFile].position.x = newXPos;
+                let newXPos = this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.x + (value - this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.x)
+                    * Math.cos(this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].rotation.z) / 2;
+                    this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.x = newXPos;
+                    this.props.cubeArray[this.state.currentFileIndex][interpolationObjIndexCurrentFile].position.x = newXPos;
 
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["x"] = newXPos;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["x"] = newXPos;
-                let newYPos = labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.y + (value - labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.x)
-                    * Math.sin(labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].rotation.z) / 2;
-                labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.y = newYPos;
-                labelTool.cubeArray[this.state.currentFileIndex][interpolationObjIndexCurrentFile].position.y = newYPos;
+                    this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["x"] = newXPos;
+                    this.props.contents[newFileIndex][interpolationObjIndexNextFile]["x"] = newXPos;
+                let newYPos = this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.y + (value - this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.x)
+                    * Math.sin(this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].rotation.z) / 2;
+                    this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.y = newYPos;
+                    this.props.cubeArray[this.state.currentFileIndex][interpolationObjIndexCurrentFile].position.y = newYPos;
 
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["y"] = newYPos;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["y"] = newYPos;
-                labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.x = value;
-                labelTool.cubeArray[this.state.currentFileIndex][interpolationObjIndexCurrentFile].scale.x = value;
+                    this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["y"] = newYPos;
+                    this.props.contents[newFileIndex][interpolationObjIndexNextFile]["y"] = newYPos;
+                this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.x = value;
+                this.props.cubeArray[this.state.currentFileIndex][interpolationObjIndexCurrentFile].scale.x = value;
 
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["size"]["width"] = value;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["width"] = value;
-                update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
+                this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["size"]["width"] = value;
+                this.props.contents[newFileIndex][interpolationObjIndexNextFile]["width"] = value;
+                this.update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
             });
             cubeEndLength.onChange(function (value) {
-                let newXPos = labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.x + (value - labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.y) * Math.sin(labelTool.cubeArray[newFileIndex][interpolationObjIndexCurrentFile].rotation.z) / 2;
-                labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.x = newXPos;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["x"] = newXPos;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["x"] = newXPos;
-                let newYPos = labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.y - (value - labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.y) * Math.cos(labelTool.cubeArray[newFileIndex][interpolationObjIndexCurrentFile].rotation.z) / 2;
-                labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.y = newYPos;
+                let newXPos = this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.x + (value - this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.y) * Math.sin(this.props.cubeArray[newFileIndex][interpolationObjIndexCurrentFile].rotation.z) / 2;
+                this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.x = newXPos;
+                this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["x"] = newXPos;
+                this.props.contents[newFileIndex][interpolationObjIndexNextFile]["x"] = newXPos;
+                let newYPos = this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.y - (value - this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.y) * Math.cos(this.props.cubeArray[newFileIndex][interpolationObjIndexCurrentFile].rotation.z) / 2;
+                this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.y = newYPos;
                 // test with -newYPos
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["y"] = newYPos;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["y"] = newYPos;
+                this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["y"] = newYPos;
+                this.props.contents[newFileIndex][interpolationObjIndexNextFile]["y"] = newYPos;
 
-                labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.y = value;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["size"]["length"] = value;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["length"] = value;
-                update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
+                this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.y = value;
+                this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["size"]["length"] = value;
+                this.props.contents[newFileIndex][interpolationObjIndexNextFile]["length"] = value;
+                this.update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
             });
             cubeEndHeight.onChange(function (value) {
-                let newZPos = labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.z + (value - labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.z) / 2;
-                labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.z = newZPos;
-                labelTool.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.z = value;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["size"]["height"] = value;
-                annotationObjects.contents[newFileIndex][interpolationObjIndexNextFile]["height"] = value;
-                update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
+                let newZPos = this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.z + (value - this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.z) / 2;
+                this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.z = newZPos;
+                this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].scale.z = value;
+                this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["size"]["height"] = value;
+                this.props.contents[newFileIndex][interpolationObjIndexNextFile]["height"] = value;
+                this.update2DBoundingBox(this.state.currentFileIndex, interpolationObjIndexCurrentFile, true);
             });
         }
     }
@@ -1185,15 +1242,15 @@ function addBoundingBoxGui(bbox, bboxEndParams) {
 
         let minTrackId = getSmallestTrackId(bbox.class);
         if (value < 1 || value !== minTrackId) {
-            labelTool.logger.error("You have entered an invalid track ID.");
+          this.props.logger.error("You have entered an invalid track ID.");
         }
-        labelTool.logger.success("Track ID for class " + bbox.class + " was set to " + minTrackId + ".");
+        this.props.logger.success("Track ID for class " + bbox.class + " was set to " + minTrackId + ".");
         value = Math.round(minTrackId);
         // update cube name
-        labelTool.cubeArray[this.state.currentFileIndex][insertIndex].name = 'cube-' + bbox.class.charAt(0) + value;
-        annotationObjects.contents[this.state.currentFileIndex][insertIndex]["trackId"] = value;
-        if (labelTool.selectedMesh !== undefined) {
-            labelTool.selectedMesh.name = 'cube-' + bbox.class.charAt(0) + value;
+        this.props.cubeArray[this.state.currentFileIndex][insertIndex].name = 'cube-' + bbox.class.charAt(0) + value;
+        this.props.contents[this.state.currentFileIndex][insertIndex]["trackId"] = value;
+        if (this.props.selectedMesh !== undefined) {
+          this.props.selectedMesh.name = 'cube-' + bbox.class.charAt(0) + value;
         }
         $("#bounding-box-3d-menu ul").children().eq(insertIndex + numGUIOptions).children().first().children().first().children().first().text(bbox.class + " " + value);
     });
@@ -1217,7 +1274,7 @@ function addBoundingBoxGui(bbox, bboxEndParams) {
 
     }
     copyLabelToNextFrameCheckbox.onChange(function (value) {
-        annotationObjects.contents[this.state.currentFileIndex][insertIndex]["copyLabelToNextFrame"] = value;
+      this.props.contents[this.state.currentFileIndex][insertIndex]["copyLabelToNextFrame"] = value;
     });
 
     folderBoundingBox3DArray[folderBoundingBox3DArray.length - 1].add(labelAttributes, 'reset').name("Reset");
@@ -1225,8 +1282,8 @@ function addBoundingBoxGui(bbox, bboxEndParams) {
 }
 
 //reset cube parameter and position
-function resetCube(index) {
-    let reset_bbox = annotationObjects.contents[this.state.currentFileIndex][index];
+resetCube = (index) => {
+    let reset_bbox = this.props.contents[this.state.currentFileIndex][index];
     reset_bbox.class = reset_bbox.original.class;
     reset_bbox.x = reset_bbox.original.x;
     reset_bbox.y = reset_bbox.original.y;
@@ -1235,19 +1292,19 @@ function resetCube(index) {
     reset_bbox.width = reset_bbox.original.width;
     reset_bbox.length = reset_bbox.original.length;
     reset_bbox.height = reset_bbox.original.height;
-    labelTool.cubeArray[this.state.currentFileIndex][index].position.x = reset_bbox.x;
-    labelTool.cubeArray[this.state.currentFileIndex][index].position.y = reset_bbox.y;
-    labelTool.cubeArray[this.state.currentFileIndex][index].position.z = reset_bbox.z;
-    labelTool.cubeArray[this.state.currentFileIndex][index].rotation.z = reset_bbox.rotationY;
-    labelTool.cubeArray[this.state.currentFileIndex][index].scale.x = reset_bbox.width;
-    labelTool.cubeArray[this.state.currentFileIndex][index].scale.y = reset_bbox.length;
-    labelTool.cubeArray[this.state.currentFileIndex][index].scale.z = reset_bbox.height;
+    this.props.cubeArray[this.state.currentFileIndex][index].position.x = reset_bbox.x;
+    this.props.cubeArray[this.state.currentFileIndex][index].position.y = reset_bbox.y;
+    this.props.cubeArray[this.state.currentFileIndex][index].position.z = reset_bbox.z;
+    this.props.cubeArray[this.state.currentFileIndex][index].rotation.z = reset_bbox.rotationY;
+    this.props.cubeArray[this.state.currentFileIndex][index].scale.x = reset_bbox.width;
+    this.props.cubeArray[this.state.currentFileIndex][index].scale.y = reset_bbox.length;
+    this.props.cubeArray[this.state.currentFileIndex][index].scale.z = reset_bbox.height;
     // TODO: redraw in 3D and 2D to change color
 
 }
 
 //change window size
-function onWindowResize() {
+onWindowResize = () => {
     // update height and top position of helper views
     let imagePanelHeight = parseInt($("#layout_layout_resizer_top").css("top"), 10);
     let newHeight = Math.round((window.innerHeight - headerHeight - imagePanelHeight) / 3.0);
@@ -1282,8 +1339,8 @@ function onWindowResize() {
 
 getObjectIndexByName = (objectName) => {
     let idToFind = objectName.split("-")[1];// e.g. cube-V1
-    for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-        let uniqueId = annotationObjects.contents[this.state.currentFileIndex][i]["class"].toUpperCase().charAt(0) + annotationObjects.contents[this.state.currentFileIndex][i]["trackId"];
+    for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+        let uniqueId = this.props.contents[this.state.currentFileIndex][i]["class"].toUpperCase().charAt(0) + this.props.contents[this.state.currentFileIndex][i]["trackId"];
         if (uniqueId === idToFind) {
             return i;
         }
@@ -1291,34 +1348,34 @@ getObjectIndexByName = (objectName) => {
 }
 
 updateObjectPosition = () => {
-    let objectIndexByTrackId = getObjectIndexByName(labelTool.selectedMesh.name);
-    annotationObjects.contents[this.state.currentFileIndex][objectIndexByTrackId]["x"] = labelTool.selectedMesh.position.x;
-    annotationObjects.contents[this.state.currentFileIndex][objectIndexByTrackId]["y"] = labelTool.selectedMesh.position.y;
-    annotationObjects.contents[this.state.currentFileIndex][objectIndexByTrackId]["z"] = labelTool.selectedMesh.position.z;
-    annotationObjects.contents[this.state.currentFileIndex][objectIndexByTrackId]["width"] = labelTool.selectedMesh.scale.x;
-    annotationObjects.contents[this.state.currentFileIndex][objectIndexByTrackId]["length"] = labelTool.selectedMesh.scale.y;
-    annotationObjects.contents[this.state.currentFileIndex][objectIndexByTrackId]["height"] = labelTool.selectedMesh.scale.z;
-    annotationObjects.contents[this.state.currentFileIndex][objectIndexByTrackId]["rotationY"] = labelTool.selectedMesh.rotation.z;
+    let objectIndexByTrackId = getObjectIndexByName(this.props.selectedMesh.name);
+    this.props.contents[this.state.currentFileIndex][objectIndexByTrackId]["x"] = this.props.selectedMesh.position.x;
+    this.props.contents[this.state.currentFileIndex][objectIndexByTrackId]["y"] = this.props.selectedMesh.position.y;
+    this.props.contents[this.state.currentFileIndex][objectIndexByTrackId]["z"] = this.props.selectedMesh.position.z;
+    this.props.contents[this.state.currentFileIndex][objectIndexByTrackId]["width"] = this.props.selectedMesh.scale.x;
+    this.props.contents[this.state.currentFileIndex][objectIndexByTrackId]["length"] = this.props.selectedMesh.scale.y;
+    this.props.contents[this.state.currentFileIndex][objectIndexByTrackId]["height"] = this.props.selectedMesh.scale.z;
+    this.props.contents[this.state.currentFileIndex][objectIndexByTrackId]["rotationY"] = this.props.selectedMesh.rotation.z;
     // update cube array
-    labelTool.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["x"] = labelTool.selectedMesh.position.x;
-    labelTool.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["y"] = labelTool.selectedMesh.position.y;
-    labelTool.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["z"] = labelTool.selectedMesh.position.z;
-    labelTool.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["width"] = labelTool.selectedMesh.scale.x;
-    labelTool.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["length"] = labelTool.selectedMesh.scale.y;
-    labelTool.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["height"] = labelTool.selectedMesh.scale.z;
-    labelTool.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["rotationY"] = labelTool.selectedMesh.rotation.z;
+    this.props.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["x"] = this.props.selectedMesh.position.x;
+    this.props.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["y"] = this.props.selectedMesh.position.y;
+    this.props.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["z"] = this.props.selectedMesh.position.z;
+    this.props.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["width"] = this.props.selectedMesh.scale.x;
+    this.props.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["length"] = this.props.selectedMesh.scale.y;
+    this.props.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["height"] = this.props.selectedMesh.scale.z;
+    this.props.cubeArray[this.state.currentFileIndex][objectIndexByTrackId]["rotationY"] = this.props.selectedMesh.rotation.z;
 
-    if (interpolationMode === true && labelTool.selectedMesh !== undefined) {
+    if (interpolationMode === true && this.props.selectedMesh !== undefined) {
         // let selectionIndex = annotationObjects.getSelectionIndex();
-        let interpolationStartFileIndex = annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"];
+        let interpolationStartFileIndex = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"];
         if (interpolationStartFileIndex !== this.state.currentFileIndex) {
-            annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["x"] = labelTool.selectedMesh.position.x;
-            annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["y"] = labelTool.selectedMesh.position.y;
-            annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["z"] = labelTool.selectedMesh.position.z;
-            annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["rotationY"] = labelTool.selectedMesh.rotation.z;
-            annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["width"] = labelTool.selectedMesh.scale.x;
-            annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["length"] = labelTool.selectedMesh.scale.y;
-            annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["height"] = labelTool.selectedMesh.scale.z;
+          this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["x"] = this.props.selectedMesh.position.x;
+          this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["y"] = this.props.selectedMesh.position.y;
+          this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["z"] = this.props.selectedMesh.position.z;
+          this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["position"]["rotationY"] = this.props.selectedMesh.rotation.z;
+          this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["width"] = this.props.selectedMesh.scale.x;
+          this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["length"] = this.props.selectedMesh.scale.y;
+          this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEnd"]["size"]["height"] = this.props.selectedMesh.scale.z;
         }
     }
 }
@@ -1327,11 +1384,11 @@ onChangeHandler = (event) => {
     useTransformControls = true;
     // update 2d bounding box
     if (dragControls === true) {
-        if (labelTool.selectedMesh !== undefined) {
+        if (this.props.selectedMesh !== undefined) {
             updateObjectPosition();
-            let objectIndexByTrackId = getObjectIndexByName(labelTool.selectedMesh.name);
-            update2DBoundingBox(this.state.currentFileIndex, objectIndexByTrackId, true);
-            this.render();
+            let objectIndexByTrackId = getObjectIndexByName(this.props.selectedMesh.name);
+            this.update2DBoundingBox(this.state.currentFileIndex, objectIndexByTrackId, true);
+            this.render3d();
         }
     }
 
@@ -1342,7 +1399,7 @@ onChangeHandler = (event) => {
     // or hover over an arrow
     // or dragging starts or draggin ends
     // or mousedown or mouseup
-    this.render();
+    this.render3d();
 
     // console.log("change");
     // console.log("mode: "+event.target.getMode());
@@ -1358,11 +1415,11 @@ onDraggingChangedHandler = (event) => {
     useTransformControls = true;
     dragControls = true;
     // update 2d bounding box
-    if (labelTool.selectedMesh !== undefined) {
+    if (this.props.selectedMesh !== undefined) {
         updateObjectPosition();
-        let objectIndexByTrackId = getObjectIndexByName(labelTool.selectedMesh.name);
-        update2DBoundingBox(this.state.currentFileIndex, objectIndexByTrackId, true);
-        this.render();
+        let objectIndexByTrackId = getObjectIndexByName(this.props.selectedMesh.name);
+        this.update2DBoundingBox(this.state.currentFileIndex, objectIndexByTrackId, true);
+        this.render3d();
     }
     // dragObject = false;
     // executed after drag finished
@@ -1373,11 +1430,12 @@ onDraggingChangedHandler = (event) => {
 }
 
 addTransformControls = () => {
+  const scene = this.state.scene;
     if (transformControls === undefined) {
         transformControls = new THREE.TransformControls(currentCamera, renderer.domElement);
         transformControls.name = "transformControls";
     } else {
-        if (transformControls.object !== labelTool.selectedMesh) {
+        if (transformControls.object !== this.props.selectedMesh) {
             transformControls.detach();
         } else {
             // transform controls are already defined and attached to selected object
@@ -1388,8 +1446,8 @@ addTransformControls = () => {
     transformControls.addEventListener('change', onChangeHandler);
     transformControls.removeEventListener('dragging-changed', onDraggingChangedHandler);
     transformControls.addEventListener('dragging-changed', onDraggingChangedHandler);
-    transformControls.attach(labelTool.selectedMesh);
-    labelTool.removeObject("transformControls");
+    transformControls.attach(this.props.selectedMesh);
+    this.props.removeObject("transformControls");
     scene.add(transformControls);
     window.removeEventListener('keydown', keyDownHandler);
     window.addEventListener('keydown', keyDownHandler);
@@ -1407,37 +1465,37 @@ keyUpHandler = (event) => {
 }
 
 keyDownHandler = (event) => {
-    if (labelTool.selectedMesh !== undefined) {
+    if (this.props.selectedMesh !== undefined) {
         switch (event.keyCode) {
             case 17: // Ctrl
                 transformControls.setTranslationSnap(0.5);
                 if (transformControls.getMode() === "rotate") {
-                    let newRotation = Math.ceil(labelTool.selectedMesh.rotation.z / THREE.Math.degToRad(15));
+                    let newRotation = Math.ceil(this.props.selectedMesh.rotation.z / THREE.Math.degToRad(15));
                     let lowerBound = newRotation * 15;
-                    if (labelTool.selectedMesh.rotation.z - lowerBound < THREE.Math.degToRad(15) / 2) {
+                    if (this.props.selectedMesh.rotation.z - lowerBound < THREE.Math.degToRad(15) / 2) {
                         // rotate to lower bound
-                        labelTool.selectedMesh.rotation.z = lowerBound;
+                        this.props.selectedMesh.rotation.z = lowerBound;
                     } else {
                         // rotate to upper bound
-                        labelTool.selectedMesh.rotation.z = lowerBound + THREE.Math.degToRad(15);
+                        this.props.selectedMesh.rotation.z = lowerBound + THREE.Math.degToRad(15);
                     }
                 }
 
                 transformControls.setRotationSnap(THREE.Math.degToRad(15));
                 break;
             case 73: //I
-                if (annotationObjects.getSelectionIndex() !== -1) {
+                if (this.props.getSelectionIndex() !== -1) {
                     if (interpolationMode === true) {
-                        if (annotationObjects.contents[this.state.currentFileIndex][annotationObjects.getSelectionIndex()]["interpolationStartFileIndex"] !== this.state.currentFileIndex) {
+                        if (this.props.contents[this.state.currentFileIndex][this.props.getSelectionIndex()]["interpolationStartFileIndex"] !== this.state.currentFileIndex) {
                             interpolate();
                         } else {
-                            labelTool.logger.message("Please choose end frame.");
+                          this.props.logger.message("Please choose end frame.");
                         }
                     } else {
-                        labelTool.logger.message("Please activate interpolation mode first.");
+                      this.props.logger.message("Please activate interpolation mode first.");
                     }
                 } else {
-                    labelTool.logger.message("Please select an object first.");
+                  this.props.logger.message("Please select an object first.");
                 }
             case 82: // R
                 transformControls.setMode("rotate");
@@ -1484,7 +1542,7 @@ keyDownHandler = (event) => {
                 if (birdsEyeViewFlag === false) {
                     transformControls.showZ = !transformControls.showZ;
                 } else {
-                    labelTool.logger.message("Show/Hide z-axis only in 3D view possible.");
+                  this.props.logger.message("Show/Hide z-axis only in 3D view possible.");
                 }
                 break;
             case 187:
@@ -1507,18 +1565,18 @@ keyDownHandler = (event) => {
             break;
         case 32: // Spacebar
             // play video sequence from current frame on to end
-            labelTool.playSequence = !labelTool.playSequence;
-            if (labelTool.playSequence === true) {
+            this.props.playSequence = !this.props.playSequence;
+            if (this.props.playSequence === true) {
                 initPlayTimer();
             }
             break;
         case 78:// N
             // next frame
-            labelTool.nextFrame();
+            this.props.nextFrame();
             break;
         case 80:// P
             // previous frame
-            labelTool.previousFrame();
+            this.props.previousFrame();
             break;
     }
 
@@ -1526,6 +1584,7 @@ keyDownHandler = (event) => {
 }
 
 setOrbitControls = () =>{
+  const scene = this.state.scene;
     document.removeEventListener('keydown', onKeyDown, false);
     document.removeEventListener('keyup', onKeyUp, false);
     scene.remove(pointerLockObject);
@@ -1614,6 +1673,7 @@ onKeyUp = (event) => {
 }
 
 setPointerLockControls = () => {
+  const scene = this.state.scene;
     pointerLockControls = new THREE.PointerLockControls(currentCamera, canvas3D);
     pointerLockObject = pointerLockControls.getObject();
     pointerLockObject.position.set(0, 0, 0);
@@ -1630,7 +1690,7 @@ setCamera = () => {
         currentCamera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 3000);
         // currentCamera = perspectiveCamera;
         if (transformControls !== undefined) {
-            if (labelTool.selectedMesh !== undefined) {
+            if (this.props.selectedMesh !== undefined) {
                 addTransformControls();
                 // if in birdseyeview then find minimum of longitude and latitude
                 // otherwise find minimum of x, y and z
@@ -1643,7 +1703,7 @@ setCamera = () => {
                 transformControls.size = 2;
                 transformControls.showZ = true;
             } else {
-                labelTool.removeObject("transformControls");
+              this.props.removeObject("transformControls");
             }
         }
 
@@ -1770,11 +1830,12 @@ setCamera = () => {
 
 }
 
-render = () => {
+render3d = () => {
     // renderer.clear();
     // renderer.clearColor(22, 22, 22);
     // renderer.setClearColor(new THREE.Color(22 / 256.0, 22 / 256.0, 22 / 256.0));
     // render main window
+    const scene = this.state.scene;
     let mainView = views[0];
     renderer.setViewport(mainView.left, mainView.top, mainView.width, mainView.height);
     renderer.setScissor(mainView.left, mainView.top, mainView.width, mainView.height);
@@ -1786,11 +1847,11 @@ render = () => {
     renderer.render(scene, currentCamera);
 
     // renderer.clear();
-    if (labelTool.selectedMesh !== undefined) {
+    if (this.props.selectedMesh !== undefined) {
         for (let i = 1; i < views.length; i++) {
             let view = views[i];
             let camera = view.camera;
-            view.updateCamera(camera, scene, labelTool.selectedMesh.position);
+            view.updateCamera(camera, scene, this.props.selectedMesh.position);
             renderer.setViewport(view.left, view.top, view.width, view.height);
             renderer.setScissor(view.left, view.top, view.width, view.height);
             renderer.setScissorTest(true);
@@ -1801,8 +1862,8 @@ render = () => {
         }
     }
 
-    if (labelTool.cubeArray !== undefined && labelTool.cubeArray.length > 0 && labelTool.cubeArray[this.state.currentFileIndex] !== undefined && labelTool.cubeArray[this.state.currentFileIndex].length > 0
-        && labelTool.spriteArray !== undefined && labelTool.spriteArray.length > 0 && labelTool.spriteArray[this.state.currentFileIndex] !== undefined && labelTool.spriteArray[this.state.currentFileIndex].length > 0) {
+    if (this.props.cubeArray !== undefined && this.props.cubeArray.length > 0 && labelTool.cubeArray[this.state.currentFileIndex] !== undefined && labelTool.cubeArray[this.state.currentFileIndex].length > 0
+        && this.props.spriteArray !== undefined && this.props.spriteArray.length > 0 && labelTool.spriteArray[this.state.currentFileIndex] !== undefined && labelTool.spriteArray[this.state.currentFileIndex].length > 0) {
         updateAnnotationOpacity();
         updateScreenPosition();
     }
@@ -1812,9 +1873,9 @@ render = () => {
 }
 
 updateAnnotationOpacity = () => {
-    for (let i = 0; i < labelTool.cubeArray[this.state.currentFileIndex].length; i++) {
-        let obj = labelTool.cubeArray[this.state.currentFileIndex][i];
-        let sprite = labelTool.spriteArray[this.state.currentFileIndex][i];
+    for (let i = 0; i < this.props.cubeArray[this.state.currentFileIndex].length; i++) {
+        let obj = this.props.cubeArray[this.state.currentFileIndex][i];
+        let sprite = this.props.spriteArray[this.state.currentFileIndex][i];
         let meshDistance = currentCamera.position.distanceTo(obj.position);
         let spriteDistance = currentCamera.position.distanceTo(sprite.position);
         spriteBehindObject = spriteDistance > meshDistance;
@@ -1828,9 +1889,9 @@ updateAnnotationOpacity = () => {
 }
 
 updateScreenPosition = () => {
-    for (let i = 0; i < labelTool.cubeArray[this.state.currentFileIndex].length; i++) {
-        let cubeObj = labelTool.cubeArray[this.state.currentFileIndex][i];
-        let annotationObj = annotationObjects.contents[this.state.currentFileIndex][i];
+    for (let i = 0; i < this.props.cubeArray[this.state.currentFileIndex].length; i++) {
+        let cubeObj = this.props.cubeArray[this.state.currentFileIndex][i];
+        let annotationObj = this.props.contents[this.state.currentFileIndex][i];
         const vector = new THREE.Vector3(cubeObj.position.x, cubeObj.position.y, cubeObj.position.z + cubeObj.scale.z / 2);
         const canvas = renderer.domElement;
         vector.project(currentCamera);
@@ -1851,7 +1912,7 @@ updateScreenPosition = () => {
 update = () => {
     // disable rotation of orbit controls if object selected
     if (birdsEyeViewFlag === false) {
-        if (labelTool.selectedMesh !== undefined) {
+        if (this.props.selectedMesh !== undefined) {
             currentOrbitControls.enableRotate = false;
         } else {
             currentOrbitControls.enableRotate = true;
@@ -2047,7 +2108,7 @@ animate = () => {
     //     }
     // }
     // cameraControls.update(camera, keyboard, clock);
-    update();
+    this.update();
     if (keyboardNavigation === true && pointerLockControls !== undefined) {
         let time = performance.now();
         let delta = (time - prevTime) / 1000;
@@ -2109,7 +2170,7 @@ animate = () => {
         prevTime = time;
     }
 
-    this.render();
+    this.render3d();
 
 }
 
@@ -2138,42 +2199,42 @@ getChannelsByPosition = (x, y) => {
 
     if (this.state.currentDataset === this.state.datasets.NuScenes) {
         if ((alphaDegrees >= 325 && alphaDegrees < 360) || (alphaDegrees >= 0 && alphaDegrees < 35)) {
-            channels.push(labelTool.camChannels[1].channel);
+            channels.push(this.props.camChannels[1].channel);
         }
         if (alphaDegrees >= 20 && alphaDegrees < 90) {
-            channels.push(labelTool.camChannels[2].channel);
+            channels.push(this.props.camChannels[2].channel);
         }
         if (alphaDegrees >= 75 && alphaDegrees < 145) {
-            channels.push(labelTool.camChannels[3].channel);
+            channels.push(this.props.camChannels[3].channel);
         }
         if (alphaDegrees >= 115 && alphaDegrees < 245) {
-            channels.push(labelTool.camChannels[4].channel);
+            channels.push(this.props.camChannels[4].channel);
         }
         if (alphaDegrees >= 215 && alphaDegrees < 285) {
-            channels.push(labelTool.camChannels[5].channel);
+            channels.push(this.props.camChannels[5].channel);
         }
         if (alphaDegrees >= 270 && alphaDegrees < 340) {
-            channels.push(labelTool.camChannels[0].channel);
+            channels.push(this.props.camChannels[0].channel);
         }
     } else {
         // GoPro Hero 4 Black, 4:3, wide angle, 122.6 degree
         if ((alphaDegrees >= 312.8 && alphaDegrees < 360) || (alphaDegrees >= 0 && alphaDegrees < 47.2)) {
-            channels.push(labelTool.camChannels[1].channel);
+            channels.push(this.props.camChannels[1].channel);
         }
         if (alphaDegrees >= 20 && alphaDegrees < 90) {
-            channels.push(labelTool.camChannels[2].channel);
+            channels.push(this.props.camChannels[2].channel);
         }
         if (alphaDegrees >= 75 && alphaDegrees < 145) {
-            channels.push(labelTool.camChannels[3].channel);
+            channels.push(this.props.camChannels[3].channel);
         }
         if (alphaDegrees >= 115 && alphaDegrees < 245) {
-            channels.push(labelTool.camChannels[4].channel);
+            channels.push(this.props.camChannels[4].channel);
         }
         if (alphaDegrees >= 215 && alphaDegrees < 285) {
-            channels.push(labelTool.camChannels[5].channel);
+            channels.push(this.props.camChannels[5].channel);
         }
         if (alphaDegrees >= 270 && alphaDegrees < 340) {
-            channels.push(labelTool.camChannels[0].channel);
+            channels.push(this.props.camChannels[0].channel);
         }
     }
 
@@ -2197,9 +2258,9 @@ calculateProjectedBoundingBox = (xPos, yPos, zPos, width, length, height, channe
     console.log("image panel height: "+imagePanelHeight)
     if (this.state.currentDataset === this.state.datasets.NuScenes) {
         imageScalingFactor = 900 / imagePanelHeight;//5
-        xPos = xPos + labelTool.translationVectorLidarToCamFront[1];//lat
-        yPos = yPos + labelTool.translationVectorLidarToCamFront[0];//long
-        zPos = zPos + labelTool.translationVectorLidarToCamFront[2];//vertical
+        xPos = xPos + this.props.translationVectorLidarToCamFront[1];//lat
+        yPos = yPos + this.props.translationVectorLidarToCamFront[0];//long
+        zPos = zPos + this.props.translationVectorLidarToCamFront[2];//vertical
     }
     let cornerPoints = [];
 
@@ -2222,7 +2283,7 @@ calculateProjectedBoundingBox = (xPos, yPos, zPos, width, length, height, channe
         let projectionMatrix;
         let point2D;
         if (this.state.currentDataset === this.state.datasets.NuScenes) {
-            projectionMatrix = labelTool.camChannels[idx].projectionMatrixNuScenes;
+            projectionMatrix = this.props.camChannels[idx].projectionMatrixNuScenes;
             point2D = matrixProduct3x4(projectionMatrix, point3D);
         }
 
@@ -2309,14 +2370,14 @@ calculateProjectedBoundingBox = (xPos, yPos, zPos, width, length, height, channe
 
 changeDataset = (datasetName) => {
     this.state.currentDataset = datasetName;
-    labelTool.reset();
-    labelTool.start();
+    this.props.reset();
+    this.props.start();
 }
 
 changeSequence = (sequence) => {
-    labelTool.currentSequence = sequence;
-    labelTool.reset();
-    labelTool.start();
+    this.state.currentSequence = sequence;
+    this.props.reset();
+    this.props.start();
     // set height of panel slider
 
     // set height of all svg elements
@@ -2330,7 +2391,7 @@ readPointCloud = () => {
         if (this.state.showOriginalNuScenesLabels === true) {
             rawFile.open("GET", 'input/' + this.state.currentDataset + '/pointclouds/' + pad(this.state.currentFileIndex, 6) + '.pcd', false);
         } else {
-            rawFile.open("GET", 'input/' + this.state.currentDataset + '/' + labelTool.currentSequence + '/pointclouds/' + pad(this.state.currentFileIndex, 6) + '.pcd', false);
+            rawFile.open("GET", 'input/' + this.state.currentDataset + '/' + this.state.currentSequence + '/pointclouds/' + pad(this.state.currentFileIndex, 6) + '.pcd', false);
         }
     } catch (error) {
         // no labels available for this camera image
@@ -2380,7 +2441,7 @@ projectPoints = (points3D, channelIdx) => {
     let imagePanelHeight = parseInt($("#layout_layout_resizer_top").css("top"), 10);
     if (this.state.currentDataset === this.state.datasets.NuScenes) {
         scalingFactor = 900 / imagePanelHeight;
-        projectionMatrix = labelTool.camChannels[channelIdx].projectionMatrixNuScenes;
+        projectionMatrix = this.props.camChannels[channelIdx].projectionMatrixNuScenes;
     }
 
     for (let i = 0; i < points3D.length; i++) {
@@ -2423,7 +2484,7 @@ normalizeDistances = () => {
 
 showProjectedPoints = () => {
     let points3D = readPointCloud();
-    for (let channelIdx = 0; channelIdx < labelTool.camChannels.length; channelIdx++) {
+    for (let channelIdx = 0; channelIdx < this.props.camChannels.length; channelIdx++) {
         let paper = paperArrayAll[this.state.currentFileIndex][channelIdx];
         let points2D = projectPoints(points3D, channelIdx);
         normalizeDistances();
@@ -2500,13 +2561,13 @@ increaseTrackId = (label, dataset) => {
 
     // find out the lowest possible track id for a specific class
 
-    for (let newTrackId = 1; newTrackId <= annotationObjects.contents[this.state.currentFileIndex].length; newTrackId++) {
+    for (let newTrackId = 1; newTrackId <= this.props.contents[this.state.currentFileIndex].length; newTrackId++) {
         let exist = false;
-        for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-            if (label !== annotationObjects.contents[this.state.currentFileIndex]["class"]) {
+        for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+            if (label !== this.props.contents[this.state.currentFileIndex]["class"]) {
                 continue;
             }
-            if (newTrackId === annotationObjects.contents[this.state.currentFileIndex][i]["trackId"]) {
+            if (newTrackId === this.props.contents[this.state.currentFileIndex][i]["trackId"]) {
                 exist = true;
                 break;
             }
@@ -2590,6 +2651,8 @@ showBEV = (xPos, yPos, zPos) => {
 }
 
 initFrontView = () => {
+  const scene = this.state.scene;
+
     canvasFrontView = document.createElement("canvas");
     canvasFrontView.id = "canvasFrontView";
     let widthFrontView = window.innerWidth / 3;
@@ -2630,6 +2693,7 @@ showFrontView = () => {
 }
 
 initSideView = () => {
+  const scene = this.state.scene;
     canvasSideView = document.createElement("canvas");
     canvasSideView.id = "canvasSideView";
     let widthSideView = window.innerWidth / 3;
@@ -2704,11 +2768,14 @@ enableInterpolationModeCheckbox = (interpolationModeCheckbox) => {
 }
 
 enableInterpolationBtn = () =>{
+
     interpolateBtn.domElement.parentElement.parentElement.style.pointerEvents = "all";
     interpolateBtn.domElement.parentElement.parentElement.style.opacity = 1.0;
+
 }
 
 mouseUpLogic = (ev) => {
+  const scene = this.state.scene;
     dragControls = false;
     // check if scene contains transform controls
     useTransformControls = false;
@@ -2737,7 +2804,7 @@ mouseUpLogic = (ev) => {
         if (birdsEyeViewFlag === true) {
             clickedObjects = ray.intersectObjects(clickedPlaneArray);
         } else {
-            clickedObjects = ray.intersectObjects(labelTool.cubeArray[this.state.currentFileIndex]);
+            clickedObjects = ray.intersectObjects(this.props.cubeArray[this.state.currentFileIndex]);
         }
 
 
@@ -2756,20 +2823,20 @@ mouseUpLogic = (ev) => {
             // }
             // labelTool.cubeArray[this.state.currentFileIndex][clickedObjectIndex].material.opacity = 0.9;
             // open folder of selected object
-            annotationObjects.localOnSelect["PCD"](clickedObjectIndex);
+            this.props.localOnSelect["PCD"](clickedObjectIndex);
             // set selected object
 
-            labelTool.selectedMesh = labelTool.cubeArray[this.state.currentFileIndex][clickedObjectIndex];
-            if (labelTool.selectedMesh !== undefined) {
-                for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-                    $("#tooltip-" + annotationObjects.contents[this.state.currentFileIndex][i]["class"].charAt(0) + annotationObjects.contents[this.state.currentFileIndex][i]["trackId"]).show();
+            this.props.selectedMesh = this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex];
+            if (this.props.selectedMesh !== undefined) {
+                for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+                    $("#tooltip-" + this.props.contents[this.state.currentFileIndex][i]["class"].charAt(0) + this.props.contents[this.state.currentFileIndex][i]["trackId"]).show();
                 }
-                $("#tooltip-" + annotationObjects.contents[this.state.currentFileIndex][clickedObjectIndex]["class"].charAt(0) + annotationObjects.contents[this.state.currentFileIndex][clickedObjectIndex]["trackId"]).hide();
+                $("#tooltip-" + this.props.contents[this.state.currentFileIndex][clickedObjectIndex]["class"].charAt(0) + this.props.contents[this.state.currentFileIndex][clickedObjectIndex]["trackId"]).hide();
                 addTransformControls();
 
                 if (transformControls.position !== undefined) {
                     transformControls.detach();
-                    transformControls.attach(labelTool.selectedMesh);
+                    transformControls.attach(this.props.selectedMesh);
                 }
 
                 // if in birdseyeview then find minimum of longitude and latitude
@@ -2783,13 +2850,13 @@ mouseUpLogic = (ev) => {
                 // let size = smallestSide / 2.0;
                 transformControls.size = 2;
             } else {
-                labelTool.removeObject("transformControls");
+              this.props.removeObject("transformControls");
             }
 
-            for (let channelIdx in labelTool.camChannels) {
-                if (labelTool.camChannels.hasOwnProperty(channelIdx)) {
-                    let camChannel = labelTool.camChannels[channelIdx].channel;
-                    annotationObjects.select(clickedObjectIndex, camChannel);
+            for (let channelIdx in this.props.camChannels) {
+                if (this.props.camChannels.hasOwnProperty(channelIdx)) {
+                    let camChannel = this.props.camChannels[channelIdx].channel;
+                    this.props.select(clickedObjectIndex, camChannel);
                 }
             }
             // uncolor previous selected object
@@ -2802,16 +2869,16 @@ mouseUpLogic = (ev) => {
             // move button to right
             $("#left-btn").css("left", window.innerWidth / 3 - 70);
 
-            let obj = annotationObjects.contents[this.state.currentFileIndex][clickedObjectIndex];
+            let obj = this.props.contents[this.state.currentFileIndex][clickedObjectIndex];
             this.showHelperViews(obj["x"], obj["y"], obj["z"]);
 
             // enable interpolate button if interpolation mode is activated AND selected object is the same as interpolated object
             if (interpolationMode === true) {
-                if (annotationObjects.contents[this.state.currentFileIndex][clickedObjectIndex]["interpolationStartFileIndex"] !== -1 && annotationObjects.contents[this.state.currentFileIndex][clickedObjectIndex]["interpolationStartFileIndex"] !== this.state.currentFileIndex) {
+                if (this.props.contents[this.state.currentFileIndex][clickedObjectIndex]["interpolationStartFileIndex"] !== -1 && this.props.contents[this.state.currentFileIndex][clickedObjectIndex]["interpolationStartFileIndex"] !== this.state.currentFileIndex) {
                   this.enableInterpolationBtn();
                 } else {
                     interpolationObjIndexCurrentFile = clickedObjectIndex;
-                    let obj = annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile];
+                    let obj = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile];
                     obj["interpolationStart"]["position"]["x"] = obj["x"];
                     obj["interpolationStart"]["position"]["y"] = obj["y"];
                     obj["interpolationStart"]["position"]["z"] = obj["z"];
@@ -2828,8 +2895,8 @@ mouseUpLogic = (ev) => {
                         folderPositionArray[clickedObjectIndexPrevious].domElement.firstChild.firstChild.innerText = "Position";
                         folderSizeArray[clickedObjectIndexPrevious].domElement.firstChild.firstChild.innerText = "Size";
                         // remove start position from previous selected object
-                        annotationObjects.contents[this.state.currentFileIndex][clickedObjectIndexPrevious]["interpolationStartFileIndex"] = -1;
-                        annotationObjects.contents[this.state.currentFileIndex][clickedObjectIndexPrevious]["interpolationStart"] = {
+                        this.props.contents[this.state.currentFileIndex][clickedObjectIndexPrevious]["interpolationStartFileIndex"] = -1;
+                        this.props.contents[this.state.currentFileIndex][clickedObjectIndexPrevious]["interpolationStart"] = {
                             position: {
                                 x: -1,
                                 y: -1,
@@ -2864,16 +2931,16 @@ mouseUpLogic = (ev) => {
 
         } else {
             // remove selection in camera view if 2d label exist
-            for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-                if (annotationObjects.contents[this.state.currentFileIndex][i]["rect"] !== undefined) {
+            for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+                if (this.props.contents[this.state.currentFileIndex][i]["rect"] !== undefined) {
                     // removeBoundingBoxHighlight(i);
                     this.removeTextBox(i);
                 }
             }
 
             // remove selection in birds eye view (lower opacity)
-            for (let mesh in labelTool.cubeArray[this.state.currentFileIndex]) {
-                let meshObject = labelTool.cubeArray[this.state.currentFileIndex][mesh];
+            for (let mesh in this.props.cubeArray[this.state.currentFileIndex]) {
+                let meshObject = this.props.cubeArray[this.state.currentFileIndex][mesh];
                 meshObject.material.opacity = 0.9;
             }
 
@@ -2881,9 +2948,9 @@ mouseUpLogic = (ev) => {
             if (transformControls !== undefined) {
                 transformControls.detach();
             }
-            labelTool.removeObject("transformControls");
-            labelTool.selectedMesh = undefined;
-            annotationObjects.selectEmpty();
+            this.props.removeObject("transformControls");
+            this.props.selectedMesh = undefined;
+            this.props.selectEmpty();
 
             // disable interpolate button
             this.disableInterpolationBtn();
@@ -2904,13 +2971,13 @@ mouseUpLogic = (ev) => {
 
         if (clickFlag === true) {
             clickedPlaneArray = [];
-            for (let channelIdx in labelTool.camChannels) {
-                if (labelTool.camChannels.hasOwnProperty(channelIdx)) {
-                    let camChannel = labelTool.camChannels[channelIdx].channel;
-                    annotationObjects.select(clickedObjectIndex, camChannel);
+            for (let channelIdx in this.props.camChannels) {
+                if (this.props.camChannels.hasOwnProperty(channelIdx)) {
+                    let camChannel = this.props.camChannels[channelIdx].channel;
+                    this.props.select(clickedObjectIndex, camChannel);
                 }
             }
-            clickedObjectIndexPrevious = annotationObjects.__selectionIndexCurrentFrame;
+            clickedObjectIndexPrevious = this.props.__selectionIndexCurrentFrame;
             clickFlag = false;
         } else if (groundPlaneArray.length === 1 && birdsEyeViewFlag === true && useTransformControls === false) {
             let groundUpObject = ray.intersectObjects(groundPlaneArray);
@@ -2920,25 +2987,25 @@ mouseUpLogic = (ev) => {
             let insertIndex;
             this.setHighestAvailableTrackId(classesBoundingBox.targetName());
             if (this.state.showOriginalNuScenesLabels === true && this.state.currentDataset === this.state.datasets.NuScenes) {
-                if (annotationObjects.__selectionIndexCurrentFrame === -1) {
+                if (this.props.__selectionIndexCurrentFrame === -1) {
                     // no object selected in 3d scene (new object was created)-> use selected class from class menu
                     trackId = classesBoundingBox.content[classesBoundingBox.targetName()].nextTrackId;
-                    insertIndex = annotationObjects.contents[this.state.currentFileIndex].length;
+                    insertIndex = this.props.contents[this.state.currentFileIndex].length;
                 } else {
                     // object was selected in 3d scene
-                    trackId = annotationObjects.contents[this.state.currentFileIndex][annotationObjects.__selectionIndexCurrentFrame]["trackId"];
-                    insertIndex = annotationObjects.__selectionIndexCurrentFrame;
-                    clickedObjectIndexPrevious = annotationObjects.__selectionIndexCurrentFrame;
+                    trackId = this.props.contents[this.state.currentFileIndex][this.props.__selectionIndexCurrentFrame]["trackId"];
+                    insertIndex = this.props.__selectionIndexCurrentFrame;
+                    clickedObjectIndexPrevious = this.props.__selectionIndexCurrentFrame;
                 }
             } else {
-                if (annotationObjects.__selectionIndexCurrentFrame === -1) {
+                if (this.props.__selectionIndexCurrentFrame === -1) {
                     trackId = classesBoundingBox[classesBoundingBox.targetName()].nextTrackId;
-                    insertIndex = annotationObjects.contents[this.state.currentFileIndex].length;
-                    clickedObjectIndexPrevious = annotationObjects.contents[this.state.currentFileIndex].length;
+                    insertIndex = this.props.contents[this.state.currentFileIndex].length;
+                    clickedObjectIndexPrevious = this.props.contents[this.state.currentFileIndex].length;
                 } else {
-                    trackId = annotationObjects.contents[this.state.currentFileIndex][annotationObjects.__selectionIndexCurrentFrame]["trackId"];
-                    insertIndex = annotationObjects.__selectionIndexCurrentFrame;
-                    clickedObjectIndexPrevious = annotationObjects.__selectionIndexCurrentFrame;
+                    trackId = this.props.contents[this.state.currentFileIndex][this.props.__selectionIndexCurrentFrame]["trackId"];
+                    insertIndex = this.props.__selectionIndexCurrentFrame;
+                    clickedObjectIndexPrevious = this.props.__selectionIndexCurrentFrame;
                 }
             }
 
@@ -2954,7 +3021,7 @@ mouseUpLogic = (ev) => {
                 addBboxParameters.class = classesBoundingBox.targetName();
                 addBboxParameters.x = xPos;
                 addBboxParameters.y = yPos;
-                addBboxParameters.z = zPos + defaultHeight / 2 - labelTool.positionLidarNuscenes[2];
+                addBboxParameters.z = zPos + defaultHeight / 2 - this.props.positionLidarNuscenes[2];
                 addBboxParameters.width = Math.abs(groundPointMouseUp.x - groundPointMouseDown.x);
                 addBboxParameters.length = Math.abs(groundPointMouseUp.y - groundPointMouseDown.y);
                 addBboxParameters.height = defaultHeight;
@@ -2963,7 +3030,7 @@ mouseUpLogic = (ev) => {
                     class: classesBoundingBox.targetName(),
                     x: (groundPointMouseUp.x + groundPointMouseDown.x) / 2,
                     y: (groundPointMouseUp.y + groundPointMouseDown.y) / 2,
-                    z: zPos + defaultHeight / 2 - labelTool.positionLidarNuscenes[2],
+                    z: zPos + defaultHeight / 2 - this.props.positionLidarNuscenes[2],
                     width: Math.abs(groundPointMouseUp.x - groundPointMouseDown.x),
                     length: Math.abs(groundPointMouseUp.y - groundPointMouseDown.y),
                     height: defaultHeight,
@@ -2986,8 +3053,8 @@ mouseUpLogic = (ev) => {
                     addBboxParameters["interpolationStartFileIndex"] = this.state.currentFileIndex;
                 }
                 // set channel
-                for (let i = 0; i < labelTool.camChannels.length; i++) {
-                    let channel = labelTool.camChannels[i].channel;
+                for (let i = 0; i < this.props.camChannels.length; i++) {
+                    let channel = this.props.camChannels[i].channel;
                     let projectedBoundingBox = calculateProjectedBoundingBox(xPos, yPos, addBboxParameters.z, addBboxParameters.width, addBboxParameters.length, addBboxParameters.height, channel, addBboxParameters.rotationY);
                     addBboxParameters.channels[i].projectedPoints = projectedBoundingBox;
                 }
@@ -3001,25 +3068,25 @@ mouseUpLogic = (ev) => {
                         }
                     }
                 }
-                annotationObjects.set(insertIndex, addBboxParameters);
-                labelTool.selectedMesh = labelTool.cubeArray[this.state.currentFileIndex][insertIndex];
-                if (labelTool.selectedMesh !== undefined) {
+                this.props.set(insertIndex, addBboxParameters);
+                this.props.selectedMesh = this.props.cubeArray[this.state.currentFileIndex][insertIndex];
+                if (this.props.selectedMesh !== undefined) {
                   this.addTransformControls();
                 } else {
-                    labelTool.removeObject("transformControls");
+                  this.props.removeObject("transformControls");
                 }
-                $("#tooltip-" + annotationObjects.contents[this.state.currentFileIndex][insertIndex]["class"].charAt(0) + annotationObjects.contents[this.state.currentFileIndex][insertIndex]["trackId"]).hide();
+                $("#tooltip-" + this.props.contents[this.state.currentFileIndex][insertIndex]["class"].charAt(0) + annotationObjects.contents[this.state.currentFileIndex][insertIndex]["trackId"]).hide();
                 // move left button to right
                 $("#left-btn").css("left", window.innerWidth / 3 - 70);
                 this.showHelperViews(xPos, yPos, zPos);
 
 
-                annotationObjects.__insertIndex++;
+                this.props.__insertIndex++;
                 classesBoundingBox.target().nextTrackId++;
-                for (let channelIdx in labelTool.camChannels) {
-                    if (labelTool.camChannels.hasOwnProperty(channelIdx)) {
-                        let camChannel = labelTool.camChannels[channelIdx].channel;
-                        annotationObjects.select(insertIndex, camChannel);
+                for (let channelIdx in this.props.camChannels) {
+                    if (this.props.camChannels.hasOwnProperty(channelIdx)) {
+                        let camChannel = this.props.camChannels[channelIdx].channel;
+                        this.props.select(insertIndex, camChannel);
                     }
                 }
                 let interpolationModeCheckbox = document.getElementById("interpolation-checkbox");
@@ -3048,6 +3115,7 @@ handleMouseUp = (ev) => {
 }
 
 mouseDownLogic = (ev) => {
+  const scene = this.state.scene;
     let rect = ev.target.getBoundingClientRect();
     mouseDown.x = ((ev.clientX - rect.left) / window.innerWidth) * 2 - 1;
     mouseDown.y = -((ev.clientY - rect.top) / window.innerHeight) * 2 + 1;
@@ -3063,15 +3131,15 @@ mouseDownLogic = (ev) => {
         mouse.y = mouseDown.y;
         ray.setFromCamera(mouse, currentCamera);
     }
-    let clickedObjects = ray.intersectObjects(labelTool.cubeArray[this.state.currentFileIndex]);
+    let clickedObjects = ray.intersectObjects(this.props.cubeArray[this.state.currentFileIndex]);
 
     if (clickedObjects.length > 0) {
 
         if (ev.button === 0) {
-            clickedObjectIndex = labelTool.cubeArray[this.state.currentFileIndex].indexOf(clickedObjects[0].object);
+            clickedObjectIndex = this.props.cubeArray[this.state.currentFileIndex].indexOf(clickedObjects[0].object);
             clickFlag = true;
             clickedPoint = clickedObjects[0].point;
-            clickedCube = labelTool.cubeArray[this.state.currentFileIndex][clickedObjectIndex];
+            clickedCube = this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex];
 
             if (birdsEyeViewFlag === true) {
                 let material = new THREE.MeshBasicMaterial({
@@ -3089,16 +3157,16 @@ mouseDownLogic = (ev) => {
                 let normal = clickedObjects[0].face;
                 if ([normal.a, normal.b, normal.c].toString() == [6, 3, 2].toString() || [normal.a, normal.b, normal.c].toString() == [7, 6, 2].toString()) {
                     clickedPlane.rotation.x = Math.PI / 2;
-                    clickedPlane.rotation.y = labelTool.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
+                    clickedPlane.rotation.y = this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
                 } else if ([normal.a, normal.b, normal.c].toString() == [6, 7, 5].toString() || [normal.a, normal.b, normal.c].toString() == [4, 6, 5].toString()) {
                     clickedPlane.rotation.x = -Math.PI / 2;
-                    clickedPlane.rotation.y = -Math.PI / 2 - labelTool.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
+                    clickedPlane.rotation.y = -Math.PI / 2 - this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
                 } else if ([normal.a, normal.b, normal.c].toString() == [0, 2, 1].toString() || [normal.a, normal.b, normal.c].toString() == [2, 3, 1].toString()) {
                     clickedPlane.rotation.x = Math.PI / 2;
-                    clickedPlane.rotation.y = Math.PI / 2 + labelTool.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
+                    clickedPlane.rotation.y = Math.PI / 2 + this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
                 } else if ([normal.a, normal.b, normal.c].toString() == [5, 0, 1].toString() || [normal.a, normal.b, normal.c].toString() == [4, 5, 1].toString()) {
                     clickedPlane.rotation.x = -Math.PI / 2;
-                    clickedPlane.rotation.y = -labelTool.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
+                    clickedPlane.rotation.y = -this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
                 } else if ([normal.a, normal.b, normal.c].toString() == [3, 6, 4].toString() || [normal.a, normal.b, normal.c].toString() == [1, 3, 4].toString()) {
                     clickedPlane.rotation.y = -Math.PI
                 }
@@ -3109,16 +3177,16 @@ mouseDownLogic = (ev) => {
 
         } else if (ev.button === 2) {
             // rightclick
-            clickedObjectIndex = labelTool.cubeArray[this.state.currentFileIndex].indexOf(clickedObjects[0].object);
-            let bboxClass = annotationObjects.contents[this.state.currentFileIndex][clickedObjectIndex]["class"];
-            let trackId = annotationObjects.contents[this.state.currentFileIndex][clickedObjectIndex]["trackId"];
+            clickedObjectIndex = this.props.cubeArray[this.state.currentFileIndex].indexOf(clickedObjects[0].object);
+            let bboxClass = this.props.contents[this.state.currentFileIndex][clickedObjectIndex]["class"];
+            let trackId = this.props.contents[this.state.currentFileIndex][clickedObjectIndex]["trackId"];
             this.deleteObject(bboxClass, trackId, clickedObjectIndex);
             // move button to left
             $("#left-btn").css("left", -70);
         }//end right click
     } else {
-        for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-            $("#tooltip-" + annotationObjects.contents[this.state.currentFileIndex][i]["class"].charAt(0) + annotationObjects.contents[this.state.currentFileIndex][i]["trackId"]).show();
+        for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+            $("#tooltip-" + this.props.contents[this.state.currentFileIndex][i]["class"].charAt(0) + this.props.contents[this.state.currentFileIndex][i]["trackId"]).show();
         }
         if (birdsEyeViewFlag === true) {
             console.log("unselected");
@@ -3158,6 +3226,7 @@ isFullscreen = () => {
 }
 
 initViews = () => {
+  const scene = this.state.scene;
     let imagePanelTopPos = parseInt($("#layout_layout_resizer_top").css("top"), 10);
     let viewHeight;
     if (this.isFullscreen() === true) {
@@ -3297,11 +3366,12 @@ disableChooseSequenceDropDown = (chooseSequenceDropDown) => {
 }
 
 createGrid = () => {
-    labelTool.removeObject("grid");
+  const scene = this.state.scene;
+  this.props.removeObject("grid");
     grid = new THREE.GridHelper(100, 100);
     let posZLidar;
     if (this.state.currentDataset === this.state.datasets.NuScenes) {
-        posZLidar = labelTool.positionLidarNuscenes[2];
+        posZLidar = this.props.positionLidarNuscenes[2];
     }
     grid.translateZ(-posZLidar);
     grid.rotateX(Math.PI / 2);
@@ -3407,7 +3477,7 @@ canvas3DKeyDownHandler = (event) => {
 loadDetectedBoxes = () => {
     let rawFile = new XMLHttpRequest();
     try {
-        rawFile.open("GET", 'input/' + this.state.currentDataset + '/' + labelTool.currentSequence + '/detections/detections_lidar.txt', false);
+        rawFile.open("GET", 'input/' + this.state.currentDataset + '/' + this.state.currentSequence + '/detections/detections_lidar.txt', false);
     } catch (error) {
     }
 
@@ -3459,7 +3529,7 @@ loadDetectedBoxes = () => {
                         params.original.height = tmpHeight;
                     }
                     params.fileIndex = frameNumber - 1;
-                    annotationObjects.set(objectIndexWithinFrame, params);
+                    this.props.set(objectIndexWithinFrame, params);
                     classesBoundingBox.target().nextTrackId++;
                 }
             }
@@ -3544,12 +3614,12 @@ init = () => {
     const renderer = this.state.renderer;
     const projector = this.state.projector;
 
-    keyboard = new KeyboardState();
-    clock = new THREE.Clock();
+    // keyboard = new KeyboardState();
+    // clock = new THREE.Clock();
     // container = document.createElement('div');
     // document.body.appendChild(container);
 
-    scene = new THREE.Scene();
+    // scene = new THREE.Scene();
 
     scene.background = new THREE.Color(0x323232);
 
@@ -3609,15 +3679,15 @@ init = () => {
       this.handleMouseUp(ev);
     };
 
-    labelTool.cubeArray = [];
-    labelTool.spriteArray = [];
-    labelTool.savedFrames = [];
-    annotationObjects.contents = [];
+    this.props.cubeArray = [];
+    this.props.spriteArray = [];
+    this.props.savedFrames = [];
+    this.props.contents = [];
     for (let i = 0; i < this.state.numFrames; i++) {
-        labelTool.cubeArray.push([]);
-        labelTool.spriteArray.push([]);
-        labelTool.savedFrames.push([]);
-        annotationObjects.contents.push([]);
+      this.props.cubeArray.push([]);
+      this.props.spriteArray.push([]);
+      this.props.savedFrames.push([]);
+      this.props.contents.push([]);
     }
 
     if (guiBoundingBoxAnnotationMap === undefined) {
@@ -3641,12 +3711,12 @@ init = () => {
                 // TODO: improve:
                 // - do not reset
                 // - show current labels and in addition nuscenes labels
-                labelTool.reset();
-                labelTool.start();
+                this.props.reset();
+                this.props.start();
             } else {
                 // TODO: hide nuscenes labels (do not reset)
-                labelTool.reset();
-                labelTool.start();
+                this.props.reset();
+                this.props.start();
             }
         });
         let allCheckboxes = $(":checkbox");
@@ -3675,16 +3745,16 @@ init = () => {
 
         let showFieldOfViewCheckbox = guiOptions.add(parameters, 'show_field_of_view').name('Field-Of-View').listen();
         showFieldOfViewCheckbox.onChange(function (value) {
-            labelTool.showFieldOfView = value;
-            if (labelTool.showFieldOfView === true) {
-                labelTool.removeObject('rightplane');
-                labelTool.removeObject('leftplane');
-                labelTool.removeObject('prism');
-                labelTool.drawFieldOfView();
+          this.props.showFieldOfView = value;
+            if (this.props.showFieldOfView === true) {
+              this.props.removeObject('rightplane');
+              this.props.removeObject('leftplane');
+              this.props.removeObject('prism');
+              this.props.drawFieldOfView();
             } else {
-                labelTool.removeObject('rightplane');
-                labelTool.removeObject('leftplane');
-                labelTool.removeObject('prism');
+              this.props.removeObject('rightplane');
+              this.props.removeObject('leftplane');
+              this.props.removeObject('prism');
             }
         });
         let showProjectedPointsCheckbox = guiOptions.add(parameters, 'show_projected_points').name('Show projected points').listen();
@@ -3713,10 +3783,10 @@ init = () => {
         filterGroundCheckbox.onChange(function (value) {
             filterGround = value;
             if (filterGround === true) {
-                labelTool.removeObject("pointcloud-scan-" + this.state.currentFileIndex);
+              this.props.removeObject("pointcloud-scan-" + this.state.currentFileIndex);
                 this.addObject(pointCloudScanNoGroundList[this.state.currentFileIndex], "pointcloud-scan-no-ground-" + this.state.currentFileIndex);
             } else {
-                labelTool.removeObject("pointcloud-scan-no-ground-" + this.state.currentFileIndex);
+              this.props.removeObject("pointcloud-scan-no-ground-" + this.state.currentFileIndex);
                 this.addObject(pointCloudScanList[this.state.currentFileIndex], "pointcloud-scan-" + this.state.currentFileIndex);
             }
         });
@@ -3724,15 +3794,15 @@ init = () => {
         let hideOtherAnnotationsCheckbox = guiOptions.add(parameters, 'hide_other_annotations').name('Hide other annotations').listen();
         hideOtherAnnotationsCheckbox.onChange(function (value) {
             hideOtherAnnotations = value;
-            let selectionIndex = annotationObjects.getSelectionIndex();
+            let selectionIndex = this.props.getSelectionIndex();
             if (hideOtherAnnotations === true) {
-                for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
+                for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
                     // remove 3D labels
-                    let mesh = labelTool.cubeArray[this.state.currentFileIndex][i];
+                    let mesh = this.props.cubeArray[this.state.currentFileIndex][i];
                     mesh.material.opacity = 0;
                     // remove all 2D labels
-                    for (let j = 0; j < annotationObjects.contents[this.state.currentFileIndex][i].channels.length; j++) {
-                        let channelObj = annotationObjects.contents[this.state.currentFileIndex][i].channels[j];
+                    for (let j = 0; j < this.props.contents[this.state.currentFileIndex][i].channels.length; j++) {
+                        let channelObj = this.props.contents[this.state.currentFileIndex][i].channels[j];
                         // remove drawn lines of all 6 channels
                         for (let lineObj in channelObj.lines) {
                             if (channelObj.lines.hasOwnProperty(lineObj)) {
@@ -3749,9 +3819,9 @@ init = () => {
                     this.update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
                 }
             } else {
-                for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
+                for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
                     // show 3D labels
-                    let mesh = labelTool.cubeArray[this.state.currentFileIndex][i];
+                    let mesh = this.props.cubeArray[this.state.currentFileIndex][i];
                     mesh.material.opacity = 0.9;
                     // show 2D labels
                     if (selectionIndex === i) {
@@ -3783,10 +3853,10 @@ init = () => {
         interpolationModeCheckbox.onChange(function (value) {
             interpolationMode = value;
             if (interpolationMode === true) {
-                interpolationObjIndexCurrentFile = annotationObjects.getSelectionIndex();
+                interpolationObjIndexCurrentFile = this.props.getSelectionIndex();
                 if (interpolationObjIndexCurrentFile !== -1) {
                     // set interpolation start position
-                    let obj = annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile];
+                    let obj = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile];
                     obj["interpolationStart"]["position"]["x"] = obj["x"];
                     obj["interpolationStart"]["position"]["y"] = obj["y"];
                     obj["interpolationStart"]["position"]["z"] = obj["z"];
@@ -3798,10 +3868,10 @@ init = () => {
                     folderPositionArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Position (frame " + (this.state.currentFileIndex + 1) + ")";
                     folderSizeArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Size (frame " + (this.state.currentFileIndex + 1) + ")";
                     // set start index
-                    annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"] = this.state.currentFileIndex;
+                    this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"] = this.state.currentFileIndex;
                 }
                 // check 'copy label to next frame' of selected object
-                annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["copyLabelToNextFrame"] = true;
+                this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["copyLabelToNextFrame"] = true;
                 let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + interpolationObjIndexCurrentFile);
                 checkboxElem.firstChild.checked = true;
                 // disable checkbox
@@ -3843,7 +3913,7 @@ init = () => {
             } else {
                 value = parseInt(value);
             }
-            labelTool.skipFrameCount = value;
+            this.props.skipFrameCount = value;
         });
 
 
@@ -3891,4 +3961,16 @@ init = () => {
 
     this.initViews();
 
+}
+
+render(){
+  return(
+    <boundingBox 
+      get3DLabel = {()=>this.get3DLabel}
+    />,
+    <classesBoundingBox 
+    operationStack = {this.state.operationStack}
+    />
+  )
+}
 }

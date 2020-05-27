@@ -1,10 +1,13 @@
 import React, { Component } from "react";
-import classesBoundingBox from "./classesBoundingBox";
-import pcdLabelTool from "./pcd_label_tool";
-import imageLabelTool from "./image_label_tool";
+import * as THREE from 'three';
+import classesBoundingBox from "./classesBoundingBox.js";
+import pcdLabelTool from "./pcd_label_tool.js";
+
+// import imageLabelTool from "./image_label_tool";
+
+import boundingBox from "./boundingbox.js";
 import $ from 'jquery';
 window.$ = $;
-
 
 export default class BaseLabelTool extends Component {
 
@@ -13,6 +16,7 @@ export default class BaseLabelTool extends Component {
     this.state ={
       datasets: Object.freeze({"NuScenes": "NuScenes"}),
       sequencesNuScenes: [],
+      scene: new THREE.Scene(),
       currentDataset: 'NuScenes',
       currentSequence: 'One',//[2018-05-23-001-frame-00042917-00043816_small, 2018-05-23-001-frame-00042917-00043816, One]
       // temprorarily set to 100
@@ -160,7 +164,29 @@ export default class BaseLabelTool extends Component {
       timeElapsed: 0, // elapsed time in seconds
       timeElapsedScreenshot: 0, // elapsed time between two screenshots
       timeElapsedPlay: 0,
+
+      currentFileIndex : 0,
+      fileNames : [],
+      originalAnnotations : [],
+      targetClass : "Vehicle",
+      savedFrames : [],
+      cubeArray : [],
+
+      canvasArray : [],
+      canvasParamsArray : [],
+      paperArray : [],
+      paperArrayAll : [],
+      imageArray : [],
+      // pcd label tool
+      folderBoundingBox3DArray : [],
+      folderPositionArray : [],
+      folderSizeArray : [],
+      pointCloudScanList : [],
       };
+  }
+
+  componentDidMount(){
+    console.log("boundingBox######################", this.props);
   }
 
   onInitialize(dataType, f){
@@ -319,14 +345,14 @@ export default class BaseLabelTool extends Component {
 
       // draw 2D bb for all objects
       // note that last element is the 'insertIndex' -> iterate until length-1
-      if (annotationObjects.contents !== undefined && annotationObjects.contents.length > 0) {
-          for (let j = 0; j < annotationObjects.contents[this.state.currentFileIndex].length - 1; j++) {
-              let annotationObj = annotationObjects.contents[this.state.currentFileIndex][j];
+      if (this.props.contents !== undefined && this.props.contents.length > 0) {
+          for (let j = 0; j < this.props.contents[this.state.currentFileIndex].length - 1; j++) {
+              let annotationObj = this.props.contents[this.state.currentFileIndex][j];
               let params = setObjectParameters(annotationObj);
               this.draw2DProjections(params);
               // set new params
               for (let i = 0; i < annotationObj["channels"].length; i++) {
-                  annotationObjects.contents[this.state.currentFileIndex][j]["channels"][i]["lines"] = params["channels"][i]["lines"];
+                  this.props.contents[this.state.currentFileIndex][j]["channels"][i]["lines"] = params["channels"][i]["lines"];
               }
           }
       }
@@ -334,16 +360,16 @@ export default class BaseLabelTool extends Component {
   }
 
   setTrackIds() {
-      for (let annotationObj in annotationObjects.contents[this.state.currentFileIndex]) {
-          let annotation = annotationObjects.contents[this.state.currentFileIndex][annotationObj];
+      for (let annotationObj in this.props.contents[this.state.currentFileIndex]) {
+          let annotation = this.props.contents[this.state.currentFileIndex][annotationObj];
           let label = annotation["class"];
-          classesBoundingBox[label].nextTrackId++;
+          this.props.classesBoundingBox[label].nextTrackId++;
       }
   }
 
   loadAnnotationsNuscenes(annotations, fileIndex) {
       // Remove old bounding boxes of current frame.
-      annotationObjects.clear();
+      this.props.clear();
       // Add new bounding boxes.
       for (let i in annotations) {
           // convert 2D bounding box to integer values
@@ -353,18 +379,18 @@ export default class BaseLabelTool extends Component {
               });
               let annotation = annotations[i];
               // annotationObjects.selectEmpty();
-              let params = getDefaultObject();
+              let params = this.getDefaultObject();
               params.class = annotation.class;
               params.rotationY = parseFloat(annotation.rotationY);
               params.original.rotationY = parseFloat(annotation.rotationY);
               if (this.state.showOriginalNuScenesLabels === true && this.state.currentDataset === this.state.datasets.NuScenes) {
-                  classesBoundingBox.addNuSceneLabel(annotation.class);
-                  classesBoundingBox.__target = Object.keys(classesBoundingBox.content)[0];
-                  params.trackId = classesBoundingBox.content[annotation.class].nextTrackId;
-                  classesBoundingBox.content[annotation.class].nextTrackId++;
+                  this.props.addNuSceneLabel(annotation.class);
+                  this.props.__target = Object.keys(this.props.content)[0];
+                  params.trackId = this.props.content[annotation.class].nextTrackId;
+                  this.props.content[annotation.class].nextTrackId++;
               } else {
                   params.trackId = annotation.trackId;
-                  classesBoundingBox[annotation.class].nextTrackId++;
+                  this.props[annotation.class].nextTrackId++;
               }
 
               // Nuscenes labels are stored in global frame in the database
@@ -394,16 +420,16 @@ export default class BaseLabelTool extends Component {
               // project 3D position into 2D camera image
               this.draw2DProjections(params);
               // add new entry to contents array
-              annotationObjects.set(annotationObjects.__insertIndex, params);
-              annotationObjects.__insertIndex++;
-              classesBoundingBox.target().nextTrackId++;
+              this.props.set(this.props.__insertIndex, params);
+              this.props.__insertIndex++;
+              this.props.target().nextTrackId++;
           }
       }
   }
   // Set values to this.annotationObjects from allAnnotations
   loadAnnotationsJSON(allAnnotations) {
       // Remove old bounding boxes of current frame.
-      annotationObjects.clear();
+      this.props.clear();
       let maxTrackIds = [0, 0, 0, 0, 0];// vehicle, truck, motorcycle, bicycle, pedestrian
       // Add new bounding boxes.
       //for (let frameAnnotationIdx in allAnnotations) {
@@ -414,13 +440,13 @@ export default class BaseLabelTool extends Component {
           for (let annotationIdx in frameAnnotations) {
               if (frameAnnotations.hasOwnProperty(annotationIdx)) {
                   let annotation = frameAnnotations[annotationIdx];
-                  let params = getDefaultObject();
+                  let params = this.getDefaultObject();
                   params.class = annotation.class;
                   params.rotationY = parseFloat(annotation.rotationY);
                   params.original.rotationY = parseFloat(annotation.rotationY);
                   let classIdx;
                   params.trackId = annotation.trackId;
-                  classIdx = classesBoundingBox[annotation.class].index;
+                  classIdx = this.props.BoundingBoxClassify[annotation.class].index;
                   if (params.trackId > maxTrackIds[classIdx]) {
                       maxTrackIds[classIdx] = params.trackId;
                   }
@@ -452,12 +478,12 @@ export default class BaseLabelTool extends Component {
                   }
                   params.fileIndex = Number(i);
                   // add new entry to contents array
-                  annotationObjects.set(annotationObjects.__insertIndex, params);
-                  annotationObjects.__insertIndex++;
+                  this.props.set(this.props.__insertIndex, params);
+                  this.props.__insertIndex++;
                   if (this.state.showOriginalNuScenesLabels === true) {
-                      classesBoundingBox.content[classesBoundingBox.targetName()].nextTrackId++;
+                      this.props.BoundingBoxClassify.content[this.props.targetName()].nextTrackId++;
                   } else {
-                      classesBoundingBox.target().nextTrackId++;
+                    this.props.target().nextTrackId++;
                   }
 
 
@@ -465,29 +491,29 @@ export default class BaseLabelTool extends Component {
           }//end for loop frame annotations
           // reset track ids for next frame if nuscenes dataset and showLabels=true
           if (this.state.showOriginalNuScenesLabels === true && this.state.currentDataset === this.state.datasets.NuScenes) {
-              for (let i = 0; i < classesBoundingBox.classNameArray.length; i++) {
-                  classesBoundingBox.content[classesBoundingBox.classNameArray[i]].nextTrackId = 0;
+              for (let i = 0; i < this.props.BoundingBoxClassify.classNameArray.length; i++) {
+                this.props.BoundingBoxClassify.content[this.props.BoundingBoxClassify.classNameArray[i]].nextTrackId = 0;
               }
           }
           // reset insert index
-          annotationObjects.__insertIndex = 0;
+          this.props.__insertIndex = 0;
       }// end for loop all annotations
 
       if (this.state.showOriginalNuScenesLabels === true) {
-          let keys = Object.keys(classesBoundingBox.content);
+          let keys = Object.keys(this.props.BoundingBoxClassify.content);
           for (let i = 0; i < maxTrackIds.length; i++) {
-              classesBoundingBox.content[keys[i]].nextTrackId = maxTrackIds[i] + 1;
+            this.props.BoundingBoxClassify.content[keys[i]].nextTrackId = maxTrackIds[i] + 1;
           }
       } else {
-          let keys = Object.keys(classesBoundingBox);
+          let keys = Object.keys(this.props.BoundingBoxClassify);
           for (let i = 0; i < maxTrackIds.length; i++) {
-              classesBoundingBox[keys[i]].nextTrackId = maxTrackIds[i] + 1;
+            this.props.BoundingBoxClassify[keys[i]].nextTrackId = maxTrackIds[i] + 1;
           }
       }
       // project 3D positions of current frame into 2D camera images
-      if (annotationObjects.contents[this.state.currentFileIndex].length > 0) {
-          for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-              this.draw2DProjections(annotationObjects.contents[this.state.currentFileIndex][i]);
+      if (this.props.contents[this.state.currentFileIndex].length > 0) {
+          for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+              this.draw2DProjections(this.props.contents[this.state.currentFileIndex][i]);
           }
       }
   }
@@ -497,9 +523,9 @@ export default class BaseLabelTool extends Component {
       let allAnnotations = [];
       for (let j = 0; j < this.state.numFrames; j++) {
           let annotationsInFrame = [];
-          for (let i = 0; i < annotationObjects.contents[j].length; i++) {
-              if (annotationObjects.contents[j][i] !== undefined && this.state.cubeArray[j][i] !== undefined) {
-                  let annotationObj = annotationObjects.contents[j][i];
+          for (let i = 0; i < this.props.contents[j].length; i++) {
+              if (this.props.contents[j][i] !== undefined && this.state.cubeArray[j][i] !== undefined) {
+                  let annotationObj = this.props.contents[j][i];
                   // Nuscenes labels are stored in global frame within database
                   // [optional] Nuscenes: transform 3d positions from point cloud to global frame (point cloud-> ego, ego -> global)
                   let annotation = {
@@ -540,7 +566,7 @@ export default class BaseLabelTool extends Component {
       for (let i = 0; i < this.state.numFrames; i++) {
         paperArray = [];
           for (let channelIdx = 0; channelIdx < this.state.camChannels.length; channelIdx++) {
-              if (labelTool.imageCanvasInitialized === false) {
+              if (this.state.imageCanvasInitialized === false) {
                   let channel = this.state.camChannels[channelIdx].channel;
                   let id = "image-" + channel.toLowerCase().replace(/_/g, '-');
                   let minWidth = window.innerWidth / 6;
@@ -552,7 +578,7 @@ export default class BaseLabelTool extends Component {
                   canvasArray.push(canvasElem);
                   imagePanelTopPos = parseInt($("#layout_layout_resizer_top").css("top"), 10);
                   if (this.state.currentDataset === this.state.datasets.NuScenes) {
-                      imageWidth = labelTool.imageSizes["NuScenes"]["minWidthNormal"];
+                      imageWidth = this.state.imageSizes["NuScenes"]["minWidthNormal"];
 
                   }
               }
@@ -581,8 +607,8 @@ export default class BaseLabelTool extends Component {
               $(this).css('background-color', "#535353");
           }, function () {
               // on mouseout, reset the background color if not selected
-              let currentClass = classesBoundingBox.getCurrentClass();
-              let currentClassIndex = classesBoundingBox[currentClass].index;
+              let currentClass = this.props.getCurrentClass();
+              let currentClassIndex = this.props.BoundingBoxClassify[currentClass].index;
               let currentHoverIndex = $("#class-picker>ul>li").index(this);
               if (currentClassIndex !== currentHoverIndex) {
                   $(this).css('background-color', "#353535");
@@ -628,7 +654,7 @@ export default class BaseLabelTool extends Component {
                   });
               }
           } else {
-              fileName = this.state.currentDataset + "_" + labelTool.currentSequence + "_annotations.txt";
+              fileName = this.state.currentDataset + "_" + this.state.currentSequence + "_annotations.txt";
               request({
                   url: '/label/annotations/',
                   type: 'GET',
@@ -647,28 +673,30 @@ export default class BaseLabelTool extends Component {
   }
 
   reset() {
+    const scene = this.state.scene;
+
       for (let i = scene.children.length; i >= 0; i--) {
           let obj = scene.children[i];
           scene.remove(obj);
       }
 
       // base label tool
-      this.state.currentFileIndex = 0;
-      this.state.fileNames = [];
+      this.currentFileIndex = 0;
+      this.fileNames = [];
       this.originalAnnotations = [];
       this.targetClass = "Vehicle";
       this.savedFrames = [];
-      this.state.cubeArray = [];
+      this.cubeArray = [];
 
       const currentCameraChannelIndex = this.state.currentCameraChannelIndex;
       currentCameraChannelIndex = 0;
 
-      for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-          let annotationObj = annotationObjects.contents[this.state.currentFileIndex][i];
+      for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+          let annotationObj = this.props.contents[this.state.currentFileIndex][i];
           guiOptions.removeFolder(annotationObj["class"] + ' ' + annotationObj["trackId"]);
       }
       
-      annotationObjects.contents = [];
+      this.props.contents = [];
       $(".class-tooltip").remove();
       this.spriteArray = [];
 
@@ -679,10 +707,22 @@ export default class BaseLabelTool extends Component {
       $(".frame-selector__frames").empty();
 
       // classesBoundingBox
-      classesBoundingBox.colorIdx = 0;
-      classesBoundingBox.__target = Object.keys(classesBoundingBox)[0];
+      this.props.BoundingBoxClassify.colorIdx = 0;
+      // this.props.__target = Object.keys(classesBoundingBox)[0];
+      this.props.__target = Object.keys(this.props)[0];
 
       // image label tool
+
+      const canvasArray = this.state.canvasArray;
+      const canvasParamsArray = this.state.canvasParamsArray;
+      const paperArray = this.state.paperArray;
+      const paperArrayAll = this.state.paperArrayAll;
+      const imageArray = this.state.imageArray;
+      const folderBoundingBox3DArray = this.state.folderBoundingBox3DArray;
+      const folderPositionArray = this.state.folderPositionArray;
+      const folderSizeArray = this.state.folderSizeArray;
+      const pointCloudScanList = this.state.pointCloudScanList;
+
       canvasArray = [];
       canvasParamsArray = [];
       paperArray = [];
@@ -700,8 +740,9 @@ export default class BaseLabelTool extends Component {
       classPickerElem.css('border-bottom', '0px');
 
       classPickerElem.each(function (i, item) {
-          let propNamesArray = Object.getOwnPropertyNames(classesBoundingBox);
-          let color = classesBoundingBox[propNamesArray[i]].color;
+          // let propNamesArray = Object.getOwnPropertyNames(classesBoundingBox);
+          let propNamesArray = Object.getOwnPropertyNames(this.props.BoundingBoxClassify);
+          let color = this.props.BoundingBoxClassify[propNamesArray[i]].color;
           let attribute = "20px solid" + ' ' + color;
           $(item).css("border-left", attribute);
           $(item).css('border-bottom', '0px');
@@ -717,7 +758,7 @@ export default class BaseLabelTool extends Component {
       }
       w2ui['layout'].resize();
 
-      classesBoundingBox.content = [];
+      this.props.BoundingBoxClassify.content = [];
       $("#frame-selector__frames").empty();
   }
 
@@ -739,7 +780,7 @@ export default class BaseLabelTool extends Component {
       if (this.state.currentDataset === this.state.datasets.NuScenes) {
           this.state.numFrames = this.state.numFramesNuScenes;
           setSequences();
-          labelTool.currentSequence = labelTool.sequencesNuScenes[0];
+          this.state.currentSequence = labelTool.sequencesNuScenes[0];
           numFiles = 120;//[3962, 120]
 
       } else {
@@ -778,6 +819,8 @@ export default class BaseLabelTool extends Component {
   }
 
   removeObject(objectName) {
+    const scene = this.state.scene;
+
       for (let i = scene.children.length - 1; i >= 0; i--) {
           let obj = scene.children[i];
           if (obj.name === objectName) {
@@ -919,10 +962,13 @@ export default class BaseLabelTool extends Component {
   // }
   // ,
   changeFrame(newFileIndex) {
-      if (newFileIndex === this.state.numFrames - 1 && labelTool.playSequence === true) {
+
+    const scene = this.state.scene;
+
+      if (newFileIndex === this.state.numFrames - 1 && this.state.playSequence === true) {
           // last frame will be shown
           // stop playing sequence
-          labelTool.playSequence = false;
+          this.state.playSequence = false;
       }
 
       interpolationObjIndexCurrentFile = annotationObjects.getSelectionIndex();
@@ -950,12 +996,12 @@ export default class BaseLabelTool extends Component {
       // store copy flags before removing folder
       let copyFlags = [];
       // remove all folders
-      for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
+      for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
           let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + i);
           if (checkboxElem !== null) {
               copyFlags.push(checkboxElem.firstChild.checked);
           }
-          guiOptions.removeFolder(annotationObjects.contents[this.state.currentFileIndex][i]["class"] + ' ' + annotationObjects.contents[this.state.currentFileIndex][i]["trackId"]);
+          guiOptions.removeFolder(this.props.contents[this.state.currentFileIndex][i]["class"] + ' ' + annotationObjects.contents[this.state.currentFileIndex][i]["trackId"]);
       }
       // empty all folder arrays
       folderBoundingBox3DArray = [];
@@ -979,15 +1025,15 @@ export default class BaseLabelTool extends Component {
               }
           }
           // Deep copy
-          for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
+          for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
               //let copyLabelToNextFrame = annotationObjects.contents[this.state.currentFileIndex][i]["copyLabelToNextFrame"];
               let copyLabelToNextFrame = copyFlags[i];
               if (copyLabelToNextFrame === true) {
                   if (interpolationMode === true) {
                       // set start index
-                      annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEndFileIndex"] = newFileIndex;
+                      this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationEndFileIndex"] = newFileIndex;
                   }
-                  annotationObjects.contents[newFileIndex].push(jQuery.extend(true, {}, annotationObjects.contents[this.state.currentFileIndex][i]));
+                  this.props.contents[newFileIndex].push(jQuery.extend(true, {}, this.props.contents[this.state.currentFileIndex][i]));
               }
           }
       } else {
@@ -1009,6 +1055,7 @@ export default class BaseLabelTool extends Component {
               let imagePaneHeight = parseInt($("#layout_layout_resizer_top").css("top"), 10);
               const vector = new THREE.Vector3(mesh.position.x, mesh.position.y, mesh.position.z + mesh.scale.z / 2);
               const canvas = renderer.domElement;
+              // currentCamera from pcd js
               vector.project(currentCamera);
               vector.x = Math.round((0.5 + vector.x / 2) * (canvas.width));
               vector.y = Math.round((0.5 - vector.y / 2) * (canvas.height));
@@ -1019,9 +1066,9 @@ export default class BaseLabelTool extends Component {
               $("body").append(classTooltipElement);
               // }
           }
-          for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-              let trackId = annotationObjects.contents[this.state.currentFileIndex][i]["trackId"];
-              let className = annotationObjects.contents[this.state.currentFileIndex][i]["class"];
+          for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+              let trackId = this.props.contents[this.state.currentFileIndex][i]["trackId"];
+              let className = this.props.contents[this.state.currentFileIndex][i]["class"];
               let objectIndexByTrackIdAndClass = getObjectIndexByTrackIdAndClass(trackId, className, newFileIndex);
               let copyLabelToNextFrame = copyFlags[i];
               if (objectIndexByTrackIdAndClass === -1 && copyLabelToNextFrame === true) {
@@ -1034,7 +1081,7 @@ export default class BaseLabelTool extends Component {
                   let clonedSprite = sprite.clone();
                   this.spriteArray[newFileIndex].push(clonedSprite);
                   scene.add(clonedSprite);
-                  annotationObjects.contents[newFileIndex].push(jQuery.extend(true, {}, annotationObjects.contents[this.state.currentFileIndex][i]));
+                  this.props.contents[newFileIndex].push(jQuery.extend(true, {}, this.props.contents[this.state.currentFileIndex][i]));
               }
           }
       }
@@ -1052,13 +1099,13 @@ export default class BaseLabelTool extends Component {
       let bboxEndParams = undefined;
       if (interpolationMode === true) {
           bboxEndParams = {
-              x: annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["x"],
-              y: annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["y"],
-              z: annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["z"],
-              rotationY: annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["rotationY"],
-              width: annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["width"],
-              length: annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["length"],
-              height: annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["height"],
+              x: this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["x"],
+              y: this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["y"],
+              z: this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["z"],
+              rotationY: this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["rotationY"],
+              width: this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["width"],
+              length: this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["length"],
+              height: this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["height"],
               newFileIndex: newFileIndex
           };
       }
@@ -1289,8 +1336,9 @@ export default class BaseLabelTool extends Component {
 
 
   setImageSize() {
+      const imageSizes = this.state.imageSizes
       // calculate the image width given the window width
-      labelTool.imageSizes = {
+      imageSizes = {
           "NuScenes": {
               minWidthNormal: Math.floor(window.innerWidth / 6),
               minHeightNormal: Math.floor(window.innerWidth / (6 * 1.77778)),
@@ -1508,8 +1556,8 @@ export default class BaseLabelTool extends Component {
       let maxHeight;
       let minHeight;
       if (this.state.currentDataset === this.state.datasets.NuScenes) {
-          minHeight = labelTool.imageSizes["NuScenes"]["minHeightNormal"];
-          maxHeight = labelTool.imageSizes["NuScenes"]["maxHeightNormal"];
+          minHeight = this.state.imageSizes["NuScenes"]["minHeightNormal"];
+          maxHeight = this.state.imageSizes["NuScenes"]["maxHeightNormal"];
       }
 
       let topStyle = 'background-color: #F5F6F7; border: 1px solid #dfdfdf; padding: 0px;';
@@ -1724,7 +1772,7 @@ export default class BaseLabelTool extends Component {
           hours = Math.floor(this.state.timeElapsed / (60 * 60));
           timeString = this.pad(hours, 2) + ":" + this.pad(minutes, 2) + ":" + this.pad(seconds, 2);
           $("#time-elapsed").text(timeString);
-      }, labelTool.timeDelay);
+      }, this.state.timeDelay);
   }
 
   initScreenshotTimer = () => {
@@ -1736,27 +1784,27 @@ export default class BaseLabelTool extends Component {
           if (labelTool.takeCanvasScreenshot === true) {
               if (this.state.currentFileIndex < 899) {
                   // if (this.state.currentFileIndex < 450) {
-                  takeScreenshot();
+                  this.takeScreenshot();
                   this.changeFrame(this.state.currentFileIndex + 1);
               } else {
                   labelTool.takeCanvasScreenshot = false;
-                  let zip = getZipVideoFrames();
+                  let zip = this.getZipVideoFrames();
                   zip.generateAsync({type: "blob"})
                       .then(function (content) {
-                          saveAs(content, this.state.currentDataset + "_" + labelTool.currentSequence + '_video_frames.zip')
+                          saveAs(content, this.state.currentDataset + "_" + this.state.currentSequence + '_video_frames.zip')
                       });
               }
           } else {
               clearInterval(screenshotIntervalHandle);
           }
-      }, labelTool.timeDelayScreenshot);
+      }, this.state.timeDelayScreenshot);
   }
 
   initPlayTimer = () => {
       this.state.timeElapsedPlay = 0;
       let playIntervalHandle = setInterval(function () {
           this.state.timeElapsedPlay = this.state.timeElapsedPlay + 1;
-          if (labelTool.playSequence === true) {
+          if (this.state.playSequence === true) {
               if (this.state.currentFileIndex < 900) {
                   this.changeFrame(this.state.currentFileIndex + 1);
               } else {
@@ -1766,7 +1814,7 @@ export default class BaseLabelTool extends Component {
               clearInterval(playIntervalHandle);
           }
 
-      }, labelTool.timeDelayPlay);
+      }, this.state.timeDelayPlay);
   }
 
   initFrameSelector = () => {
@@ -1789,7 +1837,7 @@ export default class BaseLabelTool extends Component {
   }
 
   setPanelSize = (newFileIndex) => {
-      let panelHeight = labelTool.imageSizes["NuScenes"]["minHeightNormal"];
+      let panelHeight = this.state.imageSizes["NuScenes"]["minHeightNormal"];
       $("#layout_layout_panel_top").css("height", panelHeight);
       $("#layout_layout_resizer_top").css("top", panelHeight);
       $("#layout_layout_panel_main").css("top", panelHeight);
@@ -1814,5 +1862,50 @@ export default class BaseLabelTool extends Component {
           allSvg[this.state.numFrames - newFileIndex - 1].style.width = imgWidth;
           allSvg[this.state.numFrames - newFileIndex - 1].style.height = imgWidth / this.state.imageAspectRatioNuScenes;
       }
+  }
+
+  render(){
+    return(
+      <pcdLabelTool 
+        onInitialize = {()=>this.onInitialize}
+        pointCloudLoaded = {this.state.pointCloudLoaded}
+        removeObject = {()=>this.removeObject}
+        drawFieldOfView = {()=>this.drawFieldOfView}
+        showCameraPosition ={this.state.showCameraPosition}
+        positionLidarNuscenes = {this.state.positionLidarNuscenes}
+        createAnnotations = {() => this.createAnnotations}
+        takeCanvasScreenshot = {this.state.takeCanvasScreenshot}
+        changeFrame = {() => this.changeFrame}
+        selectedMesh = {this.state.selectedMesh}
+        createAnnotations = {() => this.createAnnotations}
+        spriteArray = {this.state.spriteArray}
+        cubeArray = {this.state.cubeArray}
+        folderEndPosition = {this.state.folderEndPosition}
+        folderEndSize = {this.state.folderEndSize}
+        logger = {this.state.logger}
+        playSequence = {this.state.playSequence}
+        nextFrame = {() => this.nextFrame}
+        camChannels = {this.state.camChannels}
+        translationVectorLidarToCamFront = {this.state.translationVectorLidarToCamFront}
+        reset = {()=>this.reset}
+        start = {()=>this.start}
+        savedFrames = {this.state.savedFrames}
+        sequencesNuScenes = {this.state.sequencesNuScenes}
+        showFieldOfView = {this.state.showFieldOfView}
+        skipFrameCount = {this.state.skipFrameCount}
+        paperArrayAll = {this.state.paperArrayAll}
+      />,
+
+      <boundingBox 
+        removeObject = {()=>this.removeObject}
+        cubeArray = {this.state.cubeArray}
+        spriteArray = {this.state.spriteArray}
+        selectedMesh = {this.state.selectedMesh}
+        camChannels = {this.state.camChannels}
+        folderBoundingBox3DArray = {this.state.folderBoundingBox3DArray}
+        folderPositionArray = {this.state.folderPositionArray}
+        folderSizeArray = {this.state.folderSizeArray}
+      />
+    )
   }
 }

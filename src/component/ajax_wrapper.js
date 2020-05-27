@@ -43,7 +43,7 @@ export default class AjaxWrapper extends Component {
         url = 'input/' + this.state.currentDataset + '/Annotations/' + channel + '/' + this.state.fileNames[fileIndex] + '.txt';
 
     } else {
-        url = 'input/' + this.state.currentDataset + '/' + labelTool.currentSequence + '/annotations/' + this.state.currentDataset + "_" + labelTool.currentSequence + '_annotations.txt';
+        url = 'input/' + this.state.currentDataset + '/' + this.state.currentSequence + '/annotations/' + this.state.currentDataset + "_" + this.state.currentSequence + '_annotations.txt';
 
     }
 
@@ -63,10 +63,10 @@ export default class AjaxWrapper extends Component {
             if (this.state.showOriginalNuScenesLabels === true && this.state.currentDataset === this.state.datasets.NuScenes) {
                 rawFile.open("GET", 'input/' + this.state.currentDataset + '/annotations_original/LIDAR_TOP/' + fileName, false);
             } else {
-                rawFile.open("GET", 'input/' + this.state.currentDataset +'/'+labelTool.currentSequence+ '/annotations/LIDAR_TOP/' + fileName, false);
+                rawFile.open("GET", 'input/' + this.state.currentDataset +'/'+this.state.currentSequence+ '/annotations/LIDAR_TOP/' + fileName, false);
             }
         } else {
-            rawFile.open("GET", 'input/' + this.state.currentDataset + '/' + labelTool.currentSequence + '/annotations/' + fileName, false);
+            rawFile.open("GET", 'input/' + this.state.currentDataset + '/' + this.state.currentSequence + '/annotations/' + fileName, false);
         }
 
 

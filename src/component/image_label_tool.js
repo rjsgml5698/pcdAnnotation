@@ -1,20 +1,21 @@
 import React, { useContext } from 'react';
+import boundingbox from './boundingbox.js';
 
 export default class ImageLabelTools extends Component {
   constructor(props){
     super(props);
     this.state ={
-      canvasArray = [],
-      canvasParamsArray = [{}, {}, {}, {}, {}, {}],
-      paperArray = [],
-      paperArrayAll = [],
-      imageArray = [],
-      imageArrayAll = [],
-      fontSize = 20,
-      isDragging = false, // For distinguishing click and drag.
-      action = "add",
-      mouseX = 0,
-      mouseY = 0,
+      canvasArray : [],
+      canvasParamsArray : [{}, {}, {}, {}, {}, {}],
+      paperArray : [],
+      paperArrayAll : [],
+      imageArray : [],
+      imageArrayAll : [],
+      fontSize : 20,
+      isDragging : false, // For distinguishing click and drag.
+      action : "add",
+      mouseX : 0,
+      mouseY : 0,
     };
   }
 
@@ -138,7 +139,7 @@ export default class ImageLabelTools extends Component {
 
     const imageArray = this.state.imageArray;
 
-      let imgPath = "input/" + this.state.currentDataset + "/" + labelTool.currentSequence + "/images/" + camChannel + "/" + this.state.fileNames[fileIndex] + ".jpg";
+      let imgPath = "input/" + this.state.currentDataset + "/" + this.state.currentSequence + "/images/" + camChannel + "/" + this.state.fileNames[fileIndex] + ".jpg";
       let channelIdx = getChannelIndexByName(camChannel);
       let paper = this.state.paperArrayAll[fileIndex][channelIdx];
       this.state.imageArray[channelIdx] = paper.image(imgPath, 0, 0, "100%", "100%");
