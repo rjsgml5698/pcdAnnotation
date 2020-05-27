@@ -104,7 +104,7 @@ export default class pcdLabelTool extends Component {
       clickedPlaneArray : [],
       birdsEyeViewFlag : true,
       cls : 0,
-      rotWorldMatrix : null,
+      rotWorldMatrix : new THREE.Matrix4(),
       rotObjectMatrix : null,
       circleArray : [],
       colorMap : [],
@@ -175,6 +175,10 @@ componentDidMount(){
 
 interpolate = () => {
     const interpolationObjIndexCurrentFile = this.props.getSelectionIndex();
+    const folderBoundingBox3DArray = this.state.folderBoundingBox3DArray;
+    const folderPositionArray = this.state.folderPositionArray;
+    const folderSizeArray = this.state.folderSizeArray;
+    
     let interpolationStartFileIndex = Number(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"]);
     if (interpolationStartFileIndex === -1) {
         this.props.logger.error("Interpolation failed. Select object to interpolate and try again.");
@@ -195,7 +199,7 @@ interpolate = () => {
 
     for (let i = 1; i < numFrames; i++) {
         // cloning
-        let clonedObject = jQuery.extend(true, {}, this.props.contents[interpolationStartFileIndex][objectIndexStartFile]);
+        let clonedObject = $.extend(true, {}, this.props.contents[interpolationStartFileIndex][objectIndexStartFile]);
         let clonedCubeObject = this.props.cubeArray[interpolationStartFileIndex][objectIndexStartFile].clone();
         let clonedSprite = this.props.spriteArray[interpolationStartFileIndex][objectIndexStartFile].clone();
         let objectIndexNextFrame = this.getObjectIndexByTrackIdAndClass(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], interpolationStartFileIndex + i);
@@ -211,7 +215,7 @@ interpolate = () => {
             this.props.cubeArray[interpolationStartFileIndex + i].push(clonedCubeObject);
             this.props.spriteArray[interpolationStartFileIndex + i].push(clonedSprite);
             // recalculate index in next frame after cloning object
-            objectIndexNextFrame = this.getObjectIndexByTrackIdAndClass(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], interpolationStartFileIndex + i);
+            objectIndexNextFrame = this.getObjectIndexByTrackIdAndClass(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], interpolationStartFileIndex + i);
         }
 
         let newX = Number(this.props.contents[interpolationStartFileIndex][objectIndexStartFile]["interpolationStart"]["position"]["x"]) + i * xDelta;
@@ -259,8 +263,8 @@ interpolate = () => {
     // enable start position and start size
     this.enableStartPositionAndSize();
     // remove end position folder and end position size
-    folderBoundingBox3DArray[interpolationObjIndexCurrentFile].removeFolder("Interpolation End Position (frame " + (labelTool.previousFileIndex + 1) + ")");
-    folderBoundingBox3DArray[interpolationObjIndexCurrentFile].removeFolder("Interpolation End Size (frame " + (labelTool.previousFileIndex + 1) + ")");
+    folderBoundingBox3DArray[interpolationObjIndexCurrentFile].removeFolder("Interpolation End Position (frame " + (this.props.previousFileIndex + 1) + ")");
+    folderBoundingBox3DArray[interpolationObjIndexCurrentFile].removeFolder("Interpolation End Size (frame " + (this.props.previousFileIndex + 1) + ")");
     // disable interpolate button
     this.disableInterpolationBtn();
 
@@ -281,6 +285,8 @@ interpolate = () => {
  *  10. change frame from 1 to 2 (go to prev. frame and remove all objects from frame 2 that were copied from frame 1)
  */
   undoOperation = () => {
+    const operationStack = this.state.operationStack;
+
     // get the last operation from the stack which is implemented as a map with key value pairs
     // the value is represented as a json object
     if (operationStack.length === 0) {
@@ -386,7 +392,7 @@ interpolate = () => {
 
 // Rotate an object around an arbitrary axis in world space
 rotateAroundWorldAxis = (object, axis, radians) => {
-    rotWorldMatrix = new THREE.Matrix4();
+    const rotWorldMatrix = new THREE.Matrix4();
     rotWorldMatrix.makeRotationAxis(axis.normalize(), radians);
 
     // old code for Three.JS pre r54:
@@ -400,7 +406,7 @@ rotateAroundWorldAxis = (object, axis, radians) => {
 
 
 rotateAroundObjectAxis = (object, axis, radians) => {
-    rotObjectMatrix = new THREE.Matrix4();
+    const rotObjectMatrix = new THREE.Matrix4();
     rotObjectMatrix.makeRotationAxis(axis.normalize(), radians);
 
     // old code for Three.JS pre r54:
@@ -459,7 +465,7 @@ drawCameraPosition = () => {
         transparent: false
     });
     let camFrontMesh = new THREE.Mesh(camFrontGeometry, material);
-    addObject(camFrontMesh, 'cam-front-object');
+    this.addObject(camFrontMesh, 'cam-front-object');
     let camFrontRightGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     material = new THREE.MeshBasicMaterial({
         color: 0x00ff00,
@@ -469,7 +475,7 @@ drawCameraPosition = () => {
     // lat, long, vert
     camFrontRightGeometry.translate(59.35125262 / 100, 41.21713246 / 100, -15.43223025 / 100);
     let camFrontRightMesh = new THREE.Mesh(camFrontRightGeometry, material);
-    addObject(camFrontRightMesh, 'cam-front-right-object');
+    this.addObject(camFrontRightMesh, 'cam-front-right-object');
     let camBackRightGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     material = new THREE.MeshBasicMaterial({
         color: 0x0000ff,
@@ -478,7 +484,7 @@ drawCameraPosition = () => {
     });
     camBackRightGeometry.translate(47.93776844 / 100, -90.71772718 / 100, -8.13149812 / 100);
     let camBackRightMesh = new THREE.Mesh(camBackRightGeometry, material);
-    addObject(camBackRightMesh, 'cam-back-right-object');
+    this.addObject(camBackRightMesh, 'cam-back-right-object');
     let camBackGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     material = new THREE.MeshBasicMaterial({
         color: 0xffff00,
@@ -487,7 +493,7 @@ drawCameraPosition = () => {
     });
     camBackGeometry.translate(-4.07865574 / 100, -95.4603164 / 100, -13.38361257 / 100);
     let camBackMesh = new THREE.Mesh(camBackGeometry, material);
-    addObject(camBackMesh, 'cam-back-object');
+    this.addObject(camBackMesh, 'cam-back-object');
     let camBackLeftGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     material = new THREE.MeshBasicMaterial({
         color: 0x00ffff,
@@ -496,7 +502,7 @@ drawCameraPosition = () => {
     });
     camBackLeftGeometry.translate(-75.37243686 / 100, -77.11760848 / 100, -15.77163041 / 100);
     let camBackLeftMesh = new THREE.Mesh(camBackLeftGeometry, material);
-    addObject(camBackLeftMesh, 'cam-back-left-object');
+    this.addObject(camBackLeftMesh, 'cam-back-left-object');
     let camFrontLeftGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     material = new THREE.MeshBasicMaterial({
         color: 0xff00ff,
@@ -505,13 +511,14 @@ drawCameraPosition = () => {
     });
     camFrontLeftGeometry.translate(-59.9910821 / 100, 50.67448108 / 100, -14.11259497 / 100);
     let camFrontLeftMesh = new THREE.Mesh(camFrontLeftGeometry, material);
-    addObject(camFrontLeftMesh, 'cam-front-left-object');
+    this.addObject(camFrontLeftMesh, 'cam-front-left-object');
 }
 
 // Visualize 2d and 3d data
 loadPCDData = () => {
     const scene = this.state.scene;
-
+    const pointCloudScanNoGroundList = this.state.pointCloudScanNoGroundList;
+    const pointCloudScanList = this.state.pointCloudScanList;
     // ASCII pcd files
     let pcdLoader = new THREE.PCDLoader();
     let pointCloudFullURL;
@@ -606,7 +613,13 @@ loadObjModel = (materialURL, objectURL) => {
 
 // this.props.onSelect = ("PCD", (selectionIndex) => {
   onSelect = ("PCD", (selectionIndex) => {
-    clickedPlaneArray = [];
+
+    const folderBoundingBox3DArray = this.state.folderBoundingBox3DArray;
+    const folderSizeArray = this.state.folderSizeArray;
+    const folderPositionArray = this.state.folderPositionArray;
+    const clickedPlaneArray = this.state.clickedPlaneArray;
+
+    // clickedPlaneArray = [];
     for (let i = 0; i < folderBoundingBox3DArray.length; i++) {
         if (folderBoundingBox3DArray[i] !== undefined) {
             folderBoundingBox3DArray[i].close();
@@ -724,7 +737,11 @@ hideMasterView = () => {
 
 //change camera position to bird view position
 switchView = () => {
+  const transformControls = this.state.transformControls;
+  const birdsEyeViewFlag = this.state.birdsEyeViewFlag;
+
     birdsEyeViewFlag = !birdsEyeViewFlag;
+
     if (transformControls !== undefined) {
       this.props.selectedMesh = undefined;
         transformControls.detach();
@@ -870,6 +887,8 @@ update2DBoundingBox = (fileIndex, objectIndex, isSelected) => {
 // }
 
 updateXPos = (newFileIndex, value) => {
+  const interpolationObjIndexNextFile = this.state.interpolationObjIndexNextFile;
+  const interpolationObjIndexCurrentFile = this.state.interpolationObjIndexCurrentFile;
   this.props.cubeArray[newFileIndex][interpolationObjIndexNextFile].position.x = value;
   this.props.contents[newFileIndex][interpolationObjIndexNextFile]["interpolationEnd"]["position"]["x"] = value;
   this.props.contents[newFileIndex][interpolationObjIndexNextFile]["x"] = value;
@@ -939,6 +958,14 @@ getSmallestTrackId = (classNameToFind) => {
 }
 
 deleteObject = (bboxClass, trackId, labelIndex) => {
+  const transformControls = this.state.transformControls;
+  const folderBoundingBox3DArray = this.state.folderBoundingBox3DArray;
+  const folderSizeArray = this.state.folderSizeArray;
+  const interpolationMode = this.state.interpolationMode;
+  const guiOptions = this.state.guiOptions;
+  const folderPositionArray = this.state.folderPositionArray;
+
+
     guiOptions.removeFolder(bboxClass + ' ' + trackId);
     // hide 3D bounding box instead of removing it (in case redo button will be pressed)
     if (transformControls !== undefined) {
@@ -984,7 +1011,7 @@ deleteObject = (bboxClass, trackId, labelIndex) => {
             classesBoundingBox[bboxClass].nextTrackId--;
         } else {
             // otherwise not last object was deleted -> find out the highest possible track id
-            setHighestAvailableTrackId(bboxClass);
+            this.setHighestAvailableTrackId(bboxClass);
         }
     }
     // if last object in current frame was deleted than disable interpolation mode
@@ -1012,6 +1039,15 @@ deleteObject = (bboxClass, trackId, labelIndex) => {
 
 //register new bounding box
 addBoundingBoxGui = (bbox, bboxEndParams) => {
+  const folderBoundingBox3DArray = this.state.folderBoundingBox3DArray;
+  const interpolationObjIndexNextFile = this.state.interpolationObjIndexNextFile;
+  const interpolationObjIndexCurrentFile = this.state.interpolationObjIndexCurrentFile;
+  const folderPositionArray = this.state.folderPositionArray;
+  const folderSizeArray = this.state.folderSizeArray;
+  const interpolationMode = this.state.interpolationMode;
+  const guiOptions = this.state.guiOptions;
+
+
     let insertIndex = folderBoundingBox3DArray.length;
     let bb = guiOptions.addFolder(bbox.class + ' ' + bbox.trackId);
     folderBoundingBox3DArray.push(bb);
@@ -1132,14 +1168,14 @@ addBoundingBoxGui = (bbox, bboxEndParams) => {
 
     if (bboxEndParams !== undefined && interpolationMode === true) {
         //interpolationObjIndexCurrentFile = annotationObjects.getSelectionIndex();
-        interpolationObjIndexNextFile = this.getObjectIndexByTrackIdAndClass(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], annotationObjects.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], bboxEndParams.newFileIndex);
+        interpolationObjIndexNextFile = this.getObjectIndexByTrackIdAndClass(this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["trackId"], this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["class"], bboxEndParams.newFileIndex);
         // change text
         let interpolationStartFileIndex = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"];
         folderPositionArray[interpolationObjIndexNextFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Position (frame " + interpolationStartFileIndex + ")";
         folderSizeArray[interpolationObjIndexNextFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Size (frame " + interpolationStartFileIndex + ")";
 
         if (interpolationStartFileIndex !== bboxEndParams.newFileIndex) {
-            disableStartPositionAndSize();
+            this.disableStartPositionAndSize();
             // add folders for end position and end size
             this.props.folderEndPosition = folderBoundingBox3DArray[interpolationObjIndexNextFile].addFolder("Interpolation End Position (frame " + (this.state.currentFileIndex + 1) + ")");
             let cubeEndX = this.props.folderEndPosition.add(bboxEndParams, 'x').name("x").min(minXPos).max(maxXPos).step(0.01).listen();
@@ -1158,7 +1194,7 @@ addBoundingBoxGui = (bbox, bboxEndParams) => {
 
             cubeEndX.onChange(function (value) {
                 if (value >= minXPos && value < maxXPos) {
-                    updateXPos(newFileIndex, value);
+                    this.updateXPos(newFileIndex, value);
                 }
             });
             cubeEndY.onChange(function (value) {
@@ -1240,7 +1276,7 @@ addBoundingBoxGui = (bbox, bboxEndParams) => {
         // check validity
         // get smallest available track id for this class (look at all objects within that sequence)
 
-        let minTrackId = getSmallestTrackId(bbox.class);
+        let minTrackId = this.getSmallestTrackId(bbox.class);
         if (value < 1 || value !== minTrackId) {
           this.props.logger.error("You have entered an invalid track ID.");
         }
@@ -1252,17 +1288,17 @@ addBoundingBoxGui = (bbox, bboxEndParams) => {
         if (this.props.selectedMesh !== undefined) {
           this.props.selectedMesh.name = 'cube-' + bbox.class.charAt(0) + value;
         }
-        $("#bounding-box-3d-menu ul").children().eq(insertIndex + numGUIOptions).children().first().children().first().children().first().text(bbox.class + " " + value);
+        $("#bounding-box-3d-menu ul").children().eq(insertIndex + this.state.numGUIOptions).children().first().children().first().children().first().text(bbox.class + " " + value);
     });
 
     let labelAttributes = {
         'copy_label_to_next_frame': bbox.copyLabelToNextFrame,
         reset: function () {
-            resetCube(insertIndex);
+            this.resetCube(insertIndex);
         },
         delete: function () {
             let labelIndex = this.getObjectIndexByTrackIdAndClass(bbox.trackId, bbox.class, this.state.currentFileIndex);
-            deleteObject(bbox.class, bbox.trackId, labelIndex);
+            this.deleteObject(bbox.class, bbox.trackId, labelIndex);
         }
     };
     let copyLabelToNextFrameCheckbox = folderBoundingBox3DArray[folderBoundingBox3DArray.length - 1].add(labelAttributes, 'copy_label_to_next_frame').name("Copy label to next frame");
@@ -1270,7 +1306,7 @@ addBoundingBoxGui = (bbox, bboxEndParams) => {
     // check copy checkbox AND disable it for selected object if in interpolation mode
     if (interpolationMode === true && bboxEndParams !== undefined) {
         copyLabelToNextFrameCheckbox.domElement.firstChild.checked = true;
-        disableCopyLabelToNextFrameCheckbox(copyLabelToNextFrameCheckbox.domElement);
+        this.disableCopyLabelToNextFrameCheckbox(copyLabelToNextFrameCheckbox.domElement);
 
     }
     copyLabelToNextFrameCheckbox.onChange(function (value) {
@@ -1305,22 +1341,29 @@ resetCube = (index) => {
 
 //change window size
 onWindowResize = () => {
+  const headerHeight = this.state.headerHeight;
+  const rendererBev = this.state.rendererBev;
+  const renderer = this.state.renderer;
+  const rendererFrontView = this.state.rendererFrontView;
+  const rendererSideView = this.state.rendererSideView;
+  const currentCamera =  this.state.currentCamera;
+
     // update height and top position of helper views
     let imagePanelHeight = parseInt($("#layout_layout_resizer_top").css("top"), 10);
     let newHeight = Math.round((window.innerHeight - headerHeight - imagePanelHeight) / 3.0);
     $("#canvasSideView").css("height", newHeight);
     $("#canvasSideView").css("top", headerHeight + imagePanelHeight);
     console.log("window resize: top: " + headerHeight + imagePanelHeight);
-    views[1].height = newHeight;
-    views[1].top = 0;
+    this.initViews.views[1].height = newHeight;
+    this.initViews.views[1].top = 0;
     $("#canvasFrontView").css("height", newHeight);
     $("#canvasFrontView").css("top", headerHeight + imagePanelHeight + newHeight);
-    views[2].height = newHeight;
-    views[2].top = newHeight;
+    this.initViews.views[2].height = newHeight;
+    this.initViews.views[2].top = newHeight;
     $("#canvasBev").css("height", newHeight);
     $("#canvasBev").css("top", headerHeight + imagePanelHeight + 2 * newHeight);
-    views[3].height = newHeight;
-    views[3].top = 2 * newHeight;
+    this.initViews.views[3].height = newHeight;
+    this.initViews.views[3].top = 2 * newHeight;
 
     // var canvas3D = $("canvas3d");
     // camera.aspect = canvas3D.getAttribute("width") / canvas3D.getAttribute("height");
@@ -1348,7 +1391,10 @@ getObjectIndexByName = (objectName) => {
 }
 
 updateObjectPosition = () => {
-    let objectIndexByTrackId = getObjectIndexByName(this.props.selectedMesh.name);
+    let objectIndexByTrackId = this.getObjectIndexByName(this.props.selectedMesh.name);
+    const interpolationObjIndexCurrentFile = this.state.interpolationObjIndexCurrentFile;
+    const interpolationMode = this.state.interpolationMode;
+
     this.props.contents[this.state.currentFileIndex][objectIndexByTrackId]["x"] = this.props.selectedMesh.position.x;
     this.props.contents[this.state.currentFileIndex][objectIndexByTrackId]["y"] = this.props.selectedMesh.position.y;
     this.props.contents[this.state.currentFileIndex][objectIndexByTrackId]["z"] = this.props.selectedMesh.position.z;
@@ -1381,12 +1427,15 @@ updateObjectPosition = () => {
 }
 
 onChangeHandler = (event) => {
+    const dragControls = this.state.dragControls;
+    const useTransformControls = this.state.useTransformControls;
+
     useTransformControls = true;
     // update 2d bounding box
     if (dragControls === true) {
         if (this.props.selectedMesh !== undefined) {
-            updateObjectPosition();
-            let objectIndexByTrackId = getObjectIndexByName(this.props.selectedMesh.name);
+            this.updateObjectPosition();
+            let objectIndexByTrackId = this.getObjectIndexByName(this.props.selectedMesh.name);
             this.update2DBoundingBox(this.state.currentFileIndex, objectIndexByTrackId, true);
             this.render3d();
         }
@@ -1412,12 +1461,22 @@ onChangeHandler = (event) => {
 }
 
 onDraggingChangedHandler = (event) => {
-    useTransformControls = true;
+  // const useTransformControls = this.state.useTransformControls;
+
+  this.setState({
+    useTransformControls: true
+  })
+    // useTransformControls = true;
+
+    const transformControls = this.state.transformControls;
+
+    const dragControls = this.state.dragControls;
+
     dragControls = true;
     // update 2d bounding box
     if (this.props.selectedMesh !== undefined) {
-        updateObjectPosition();
-        let objectIndexByTrackId = getObjectIndexByName(this.props.selectedMesh.name);
+        this.updateObjectPosition();
+        let objectIndexByTrackId = this.getObjectIndexByName(this.props.selectedMesh.name);
         this.update2DBoundingBox(this.state.currentFileIndex, objectIndexByTrackId, true);
         this.render3d();
     }
@@ -1431,6 +1490,12 @@ onDraggingChangedHandler = (event) => {
 
 addTransformControls = () => {
   const scene = this.state.scene;
+  const renderer = this.state.renderer;
+  const currentCamera = this.state.currentCamera;
+
+  const transformControls = this.state.transformControls;
+
+
     if (transformControls === undefined) {
         transformControls = new THREE.TransformControls(currentCamera, renderer.domElement);
         transformControls.name = "transformControls";
@@ -1442,20 +1507,21 @@ addTransformControls = () => {
             return;
         }
     }
-    transformControls.removeEventListener('change', onChangeHandler);
-    transformControls.addEventListener('change', onChangeHandler);
-    transformControls.removeEventListener('dragging-changed', onDraggingChangedHandler);
-    transformControls.addEventListener('dragging-changed', onDraggingChangedHandler);
+    transformControls.removeEventListener('change', this.onChangeHandler);
+    transformControls.addEventListener('change', this.onChangeHandler);
+    transformControls.removeEventListener('dragging-changed', this.onDraggingChangedHandler);
+    transformControls.addEventListener('dragging-changed', this.onDraggingChangedHandler);
     transformControls.attach(this.props.selectedMesh);
     this.props.removeObject("transformControls");
     scene.add(transformControls);
-    window.removeEventListener('keydown', keyDownHandler);
-    window.addEventListener('keydown', keyDownHandler);
-    window.removeEventListener('keyup', keyUpHandler);
-    window.addEventListener('keyup', keyUpHandler);
+    window.removeEventListener('keydown', this.keyDownHandler);
+    window.addEventListener('keydown', this.keyDownHandler);
+    window.removeEventListener('keyup', this.keyUpHandler);
+    window.addEventListener('keyup', this.keyUpHandler);
 }
 
 keyUpHandler = (event) => {
+  const transformControls = this.state.transformControls;
     switch (event.keyCode) {
         case 17: // Ctrl
             transformControls.setTranslationSnap(null);
@@ -1465,6 +1531,13 @@ keyUpHandler = (event) => {
 }
 
 keyDownHandler = (event) => {
+  const transformControls = this.state.transformControls;
+  const interpolationMode = this.state.interpolationMode;
+  const birdsEyeViewFlag = this.state.birdsEyeViewFlag;
+
+
+
+
     if (this.props.selectedMesh !== undefined) {
         switch (event.keyCode) {
             case 17: // Ctrl
@@ -1487,7 +1560,7 @@ keyDownHandler = (event) => {
                 if (this.props.getSelectionIndex() !== -1) {
                     if (interpolationMode === true) {
                         if (this.props.contents[this.state.currentFileIndex][this.props.getSelectionIndex()]["interpolationStartFileIndex"] !== this.state.currentFileIndex) {
-                            interpolate();
+                            this.interpolate();
                         } else {
                           this.props.logger.message("Please choose end frame.");
                         }
@@ -1558,16 +1631,16 @@ keyDownHandler = (event) => {
 
     switch (event.keyCode) {
         case 67: // C
-            switchView();
+            this.switchView();
             break;
         case 75: //K
-            toggleKeyboardNavigation();
+        this.toggleKeyboardNavigation();
             break;
         case 32: // Spacebar
             // play video sequence from current frame on to end
             this.props.playSequence = !this.props.playSequence;
             if (this.props.playSequence === true) {
-                initPlayTimer();
+              this.initPlayTimer();
             }
             break;
         case 78:// N
@@ -1585,16 +1658,26 @@ keyDownHandler = (event) => {
 
 setOrbitControls = () =>{
   const scene = this.state.scene;
-    document.removeEventListener('keydown', onKeyDown, false);
-    document.removeEventListener('keyup', onKeyUp, false);
+  const renderer = this.state.renderer;
+  const pointerLockObject = this.state.pointerLockObject;
+
+    document.removeEventListener('keydown', this.onKeyDown, false);
+    document.removeEventListener('keyup', this.onKeyUp, false);
     scene.remove(pointerLockObject);
 
 
-    currentCamera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 3000);
+    const currentCamera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 3000);
     currentCamera.position.set(0, 0, 5);
     currentCamera.up.set(0, 0, 1);
 
-    currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
+  
+    const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
+
+    this.setState({
+      currentCamera: currentCamera,
+      currentOrbitControls: currentOrbitControls
+    })
+
     currentOrbitControls.enablePan = true;
     currentOrbitControls.enableRotate = true;
     currentOrbitControls.autoRotate = false;// true for demo
@@ -1605,34 +1688,54 @@ setOrbitControls = () =>{
 onKeyDown = (event) => {
     switch (event.keyCode) {
         case 38: // up
-            rotateUp = true;
+            this.setState({
+              rotateUp: true
+            })
             break;
         case 69: //E
-            moveUp = true;
+            this.setState({
+              moveUp: true
+            })
             break;
         case 81: //Q
-            moveDown = true;
+            this.setState({
+              moveDown: true
+            }) 
             break;
         case 87: // w
-            moveForward = true;
+            this.setState({
+              moveForward: true
+            })    
             break;
         case 37: // left
-            rotateLeft = true;
+            this.setState({
+              rotateLeft: true
+            })
             break;
         case 65: // a
-            moveLeft = true;
+            this.setState({
+              moveLeft: true
+            })
             break;
         case 40: // down
-            rotateDown = true;
+            this.setState({
+              rotateDown: true
+            }) 
             break;
         case 83: // s
-            moveBackward = true;
+            this.setState({
+              moveBackward: true
+            }) 
             break;
         case 39: // right
-            rotateRight = true;
+            this.setState({
+              rotateRight: true
+            }) 
             break;
         case 68: // d
-            moveRight = true;
+            this.setState({
+              moveRight: true
+            })
             break;
     }
 }
@@ -1640,58 +1743,106 @@ onKeyDown = (event) => {
 onKeyUp = (event) => {
     switch (event.keyCode) {
         case 38: // up
-            rotateUp = false;
+            this.setState({
+              rotateUp: true
+            })
+      
             break;
         case 69: // E
-            moveUp = false;
+            this.setState({
+              moveUp: true
+            })
+
             break;
         case 81: //Q
-            moveDown = false;
+            this.setState({
+              moveDown: true
+            })
+       
             break;
         case 87: // w
-            moveForward = false;
+            this.setState({
+              moveForward: true
+            })
+      
             break;
         case 37: // left
-            rotateLeft = false;
+            this.setState({
+              rotateLeft: true
+            })
+         
             break;
         case 65: // a
-            moveLeft = false;
+            this.setState({
+              moveLeft: true
+            })
+       
             break;
         case 40: // down
-            rotateDown = false;
+            this.setState({
+              rotateDown: true
+            })
+      
             break;
         case 83: // s
-            moveBackward = false;
+            this.setState({
+              moveBackward: true
+            })
+     
             break;
         case 39: // right
-            rotateRight = false;
+            this.setState({
+              rotateRight: true
+            })
+
             break;
         case 68: // d
-            moveRight = false;
+            this.setState({
+              moveRight: true
+            })
+
             break;
     }
 }
 
 setPointerLockControls = () => {
   const scene = this.state.scene;
-    pointerLockControls = new THREE.PointerLockControls(currentCamera, canvas3D);
-    pointerLockObject = pointerLockControls.getObject();
+  const canvas3D = this.state.canvas3D;
+  const currentCamera = this.state.currentCamera;
+
+  const pointerLockControls = new THREE.PointerLockControls(currentCamera, canvas3D);
+  const pointerLockObject = pointerLockControls.getObject();
+
+  this.setState({
+    pointerLockControls: pointerLockControls,
+    pointerLockObject: pointerLockObject
+  })
+    // pointerLockControls = new THREE.PointerLockControls(currentCamera, canvas3D);
+    
     pointerLockObject.position.set(0, 0, 0);
     pointerLockObject.rotation.set(Math.PI / 2, 0, 0);
     scene.add(pointerLockObject);
-    window.addEventListener('keydown', onKeyDown, false);
-    window.addEventListener('keyup', onKeyUp, false);
+    window.addEventListener('keydown', this.onKeyDown, false);
+    window.addEventListener('keyup', this.onKeyUp, false);
 }
 
 //set camera type
 setCamera = () => {
+  const transformControls = this.state.transformControls;
+  const birdsEyeViewFlag = this.state.birdsEyeViewFlag;
+  const renderer = this.state.renderer;
+  const canvas3D = this.state.canvas3D;
+  const keyboardNavigation = this.state.keyboardNavigation;
+  const currentCamera = this.state.currentCamera;
+  // const pointerLockControls = this.state.pointerLockControls;
+
     if (birdsEyeViewFlag === false) {
         // 3D mode (perspective mode)
         currentCamera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 3000);
         // currentCamera = perspectiveCamera;
         if (transformControls !== undefined) {
             if (this.props.selectedMesh !== undefined) {
-                addTransformControls();
+                this.addTransformControls();
                 // if in birdseyeview then find minimum of longitude and latitude
                 // otherwise find minimum of x, y and z
                 // let smallestSide;
@@ -1710,13 +1861,13 @@ setCamera = () => {
         currentCamera.position.set(0, 0, 5);
         currentCamera.up.set(0, 0, 1);
 
-        canvas3D.removeEventListener('keydown', canvas3DKeyDownHandler);
-        canvas3D.addEventListener('keydown', canvas3DKeyDownHandler);
+        canvas3D.removeEventListener('keydown', this.canvas3DKeyDownHandler);
+        canvas3D.addEventListener('keydown', this.canvas3DKeyDownHandler);
 
         if (keyboardNavigation === true) {
-            setPointerLockControls();
+            this.setPointerLockControls();
         } else {
-            setOrbitControls();
+            this.setOrbitControls();
         }
 
         // TODO: enable to fly through the 3d scene using keys
@@ -1785,12 +1936,12 @@ setCamera = () => {
             transformControls.showZ = false;
         }
 
-        currentCamera = new THREE.OrthographicCamera(-40, 40, 20, -20, 0.0001, 2000);
+        const currentCamera = new THREE.OrthographicCamera(-40, 40, 20, -20, 0.0001, 2000);
         // currentCamera = orthographicCamera;
         currentCamera.position.set(0, 0, 5);
         currentCamera.up.set(0, 0, 1);
 
-        currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
+        const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
         currentOrbitControls.enablePan = true;
         currentOrbitControls.enableRotate = false;
         currentOrbitControls.autoRotate = false;
@@ -1825,18 +1976,23 @@ setCamera = () => {
     // scene.add(camera);
     // currentOrbitControls.addEventListener('change', render);
     if (keyboardNavigation === false) {
-        currentOrbitControls.update();
+      currentOrbitControls.update();
     }
 
 }
 
 render3d = () => {
+  const renderer = this.state.renderer;
     // renderer.clear();
     // renderer.clearColor(22, 22, 22);
     // renderer.setClearColor(new THREE.Color(22 / 256.0, 22 / 256.0, 22 / 256.0));
     // render main window
     const scene = this.state.scene;
-    let mainView = views[0];
+    const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
+    const currentCamera = this.state.currentCamera;
+
+    const keyboardNavigation = this.state.keyboardNavigation;
+    let mainView = this.initViews.views[0];
     renderer.setViewport(mainView.left, mainView.top, mainView.width, mainView.height);
     renderer.setScissor(mainView.left, mainView.top, mainView.width, mainView.height);
     renderer.setScissorTest(true);
@@ -1848,8 +2004,8 @@ render3d = () => {
 
     // renderer.clear();
     if (this.props.selectedMesh !== undefined) {
-        for (let i = 1; i < views.length; i++) {
-            let view = views[i];
+        for (let i = 1; i < this.initViews.views.length; i++) {
+            let view = this.initViews.views[i];
             let camera = view.camera;
             view.updateCamera(camera, scene, this.props.selectedMesh.position);
             renderer.setViewport(view.left, view.top, view.width, view.height);
@@ -1862,10 +2018,10 @@ render3d = () => {
         }
     }
 
-    if (this.props.cubeArray !== undefined && this.props.cubeArray.length > 0 && labelTool.cubeArray[this.state.currentFileIndex] !== undefined && labelTool.cubeArray[this.state.currentFileIndex].length > 0
-        && this.props.spriteArray !== undefined && this.props.spriteArray.length > 0 && labelTool.spriteArray[this.state.currentFileIndex] !== undefined && labelTool.spriteArray[this.state.currentFileIndex].length > 0) {
-        updateAnnotationOpacity();
-        updateScreenPosition();
+    if (this.props.cubeArray !== undefined && this.props.cubeArray.length > 0 && this.props.cubeArray[this.state.currentFileIndex] !== undefined && this.props.cubeArray[this.state.currentFileIndex].length > 0
+        && this.props.spriteArray !== undefined && this.props.spriteArray.length > 0 && this.props.spriteArray[this.state.currentFileIndex] !== undefined && this.props.spriteArray[this.state.currentFileIndex].length > 0) {
+        this.updateAnnotationOpacity();
+        this.updateScreenPosition();
     }
     if (keyboardNavigation === false) {
         currentOrbitControls.update();
@@ -1873,12 +2029,18 @@ render3d = () => {
 }
 
 updateAnnotationOpacity = () => {
+  const currentCamera = this.state.currentCamera;
+
+
     for (let i = 0; i < this.props.cubeArray[this.state.currentFileIndex].length; i++) {
         let obj = this.props.cubeArray[this.state.currentFileIndex][i];
         let sprite = this.props.spriteArray[this.state.currentFileIndex][i];
         let meshDistance = currentCamera.position.distanceTo(obj.position);
         let spriteDistance = currentCamera.position.distanceTo(sprite.position);
-        spriteBehindObject = spriteDistance > meshDistance;
+        const spriteBehindObject = spriteDistance > meshDistance;
+        this.setState({
+          spriteBehindObject: spriteBehindObject
+        })
         sprite.material.opacity = spriteBehindObject ? 0.2 : 0.8;
 
         // if number should change size according to its position
@@ -1889,6 +2051,10 @@ updateAnnotationOpacity = () => {
 }
 
 updateScreenPosition = () => {
+  const headerHeight = this.state.headerHeight;
+  const currentCamera = this.state.currentCamera;
+  const spriteBehindObject = this.state.spriteBehindObject;
+
     for (let i = 0; i < this.props.cubeArray[this.state.currentFileIndex].length; i++) {
         let cubeObj = this.props.cubeArray[this.state.currentFileIndex][i];
         let annotationObj = this.props.contents[this.state.currentFileIndex][i];
@@ -1910,6 +2076,13 @@ updateScreenPosition = () => {
 }
 
 update = () => {
+  const renderer = this.state.renderer;
+  const birdsEyeViewFlag = this.state.birdsEyeViewFlag;
+  const currentCamera = this.state.currentCamera;
+  const mousePos = this.state.mousePos;
+
+
+  const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
     // disable rotation of orbit controls if object selected
     if (birdsEyeViewFlag === false) {
         if (this.props.selectedMesh !== undefined) {
@@ -1933,6 +2106,7 @@ update = () => {
     // create a Ray with origin at the mouse position
     // and direction into the scene (camera direction)
     let vector = new THREE.Vector3(mousePos.x, mousePos.y, 1);
+    const intersectedObject = this.state.intersectedObject;
     // console.log(vector.x + " " + vector.y);
     vector.unproject(currentCamera);
     let ray = new THREE.Raycaster(currentCamera.position, vector.sub(currentCamera.position).normalize());
@@ -2108,6 +2282,14 @@ animate = () => {
     //     }
     // }
     // cameraControls.update(camera, keyboard, clock);
+    const translationVelocity = this.state.translationVelocity;
+    const rotationVelocity = this.state.rotationVelocity;
+    const translationDirection = this.state.translationDirection;
+    const rotationDirection = this.state.rotationDirection;
+    const pointerLockControls = this.state.pointerLockControls;
+    const keyboardNavigation = this.state.keyboardNavigation;
+    const pointerLockObject = this.state.pointerLockObject;
+
     this.update();
     if (keyboardNavigation === true && pointerLockControls !== undefined) {
         let time = performance.now();
@@ -2119,20 +2301,20 @@ animate = () => {
         rotationVelocity.z -= rotationVelocity.z * delta * 0.000000001;
         rotationVelocity.y -= rotationVelocity.y * delta * 0.000000001;
 
-        translationDirection.x = Number(moveLeft) - Number(moveRight);
-        translationDirection.y = Number(moveForward) - Number(moveBackward);
-        translationDirection.z = Number(moveUp) - Number(moveDown);
+        translationDirection.x = Number(this.state.moveLeft) - Number(this.state.moveRight);
+        translationDirection.y = Number(this.state.moveForward) - Number(this.state.moveBackward);
+        translationDirection.z = Number(this.state.moveUp) - Number(this.state.moveDown);
         translationDirection.normalize(); // this ensures consistent movements in all directions
-        rotationDirection.x = Number(rotateUp) - Number(rotateDown);
-        rotationDirection.y = Number(rotateRight) - Number(rotateLeft);
+        rotationDirection.x = Number(this.state.rotateUp) - Number(this.state.rotateDown);
+        rotationDirection.y = Number(this.state.rotateRight) - Number(this.state.rotateLeft);
         rotationDirection.z = 0; // roll not used
         rotationDirection.normalize(); // this ensures consistent movements in all directions
 
-        if (moveForward || moveBackward) translationVelocity.z -= translationDirection.y * 400.0 * delta;
-        if (moveLeft || moveRight) translationVelocity.x -= translationDirection.x * 400.0 * delta;
-        if (moveUp || moveDown) translationVelocity.y += translationDirection.z * 400.0 * delta;
-        if (rotateUp || rotateDown) rotationVelocity.x += rotationDirection.x * delta;
-        if (rotateRight || rotateLeft) rotationVelocity.y -= rotationDirection.y * delta;
+        if (this.state.moveForward || this.state.moveBackward) translationVelocity.z -= translationDirection.y * 400.0 * delta;
+        if (this.state.moveLeft || this.state.moveRight) translationVelocity.x -= translationDirection.x * 400.0 * delta;
+        if (this.state.moveUp || this.state.moveDown) translationVelocity.y += translationDirection.z * 400.0 * delta;
+        if (this.state.rotateUp || this.state.rotateDown) rotationVelocity.x += rotationDirection.x * delta;
+        if (this.state.rotateRight || this.state.rotateLeft) rotationVelocity.y -= rotationDirection.y * delta;
 
         pointerLockControls.getObject().translateX(translationVelocity.x * delta);//lateral
         pointerLockControls.getObject().translateY(translationVelocity.y * delta);//vertical
@@ -2156,7 +2338,7 @@ animate = () => {
         //     pointerLockObject.rotateX(0);//pitch
         // }
 
-        if (rotateLeft) {
+        if (this.state.rotateLeft) {
             pointerLockObject.rotateY(0.01);//pitch
         } else {
             pointerLockObject.rotateY(0);//pitch
@@ -2435,7 +2617,9 @@ readPointCloud = () => {
 projectPoints = (points3D, channelIdx) => {
     let points2D = [];
     currentPoints3D = [];
-    currentDistances = [];
+
+    const currentDistances = this.state.currentDistances;
+    // currentDistances = [];
     let projectionMatrix;
     let scalingFactor;
     let imagePanelHeight = parseInt($("#layout_layout_resizer_top").css("top"), 10);
@@ -2463,6 +2647,8 @@ projectPoints = (points3D, channelIdx) => {
 
 normalizeDistances = () => {
     let maxDistance = 0;
+    const currentDistances = this.state.currentDistances;
+
     for (let distanceIdx in currentDistances) {
         if (currentDistances.hasOwnProperty(distanceIdx)) {
             let distance = currentDistances[distanceIdx];
@@ -2483,7 +2669,10 @@ normalizeDistances = () => {
 // }
 
 showProjectedPoints = () => {
-    let points3D = readPointCloud();
+    let points3D = this.readPointCloud();
+    const currentDistances = this.state.currentDistances;
+    const circleArray = this.state.circleArray;
+    // circleArray
     for (let channelIdx = 0; channelIdx < this.props.camChannels.length; channelIdx++) {
         let paper = paperArrayAll[this.state.currentFileIndex][channelIdx];
         let points2D = projectPoints(points3D, channelIdx);
@@ -2502,6 +2691,7 @@ showProjectedPoints = () => {
 }
 
 hideProjectedPoints = () => {
+  const circleArray = this.state.circleArray;
     for (let i = circleArray.length - 1; i >= 0; i--) {
         let circle = circleArray[i];
         circle.remove();
@@ -2528,10 +2718,16 @@ loadColorMap = () => {
 }
 
 onDocumentMouseWheel = (event) => {
+  const renderer = this.state.renderer;
+  const currentCamera = this.state.currentCamera;
+  const container = this.state.container;
+
     let factor = 15;
-    let mX = (event.clientX / jQuery(container).width()) * 2 - 1;
-    let mY = -(event.clientY / jQuery(container).height()) * 2 + 1;
+    let mX = (event.clientX / $(container).width()) * 2 - 1;
+    let mY = -(event.clientY / $(container).height()) * 2 + 1;
     let vector = new THREE.Vector3(mX, mY, 0.1);
+    const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
+
     vector.unproject(currentCamera);
     vector.sub(currentCamera.position);
     if (event.deltaY < 0) {
@@ -2544,6 +2740,7 @@ onDocumentMouseWheel = (event) => {
 }
 
 onDocumentMouseMove = (event) => {
+  const mousePos = this.state.mousePos;
     // the following line would stop any other event handler from firing
     // (such as the mouse's TrackballControls)
     // event.preventDefault();
@@ -2581,6 +2778,9 @@ increaseTrackId = (label, dataset) => {
 }
 
 disableStartPositionAndSize = () => {
+  const interpolationObjIndexNextFile = this.state.interpolationObjIndexNextFile;
+  const folderSizeArray = this.state.folderSizeArray;
+  const folderPositionArray = this.state.folderPositionArray;
     // disable slider
     folderPositionArray[interpolationObjIndexNextFile].domElement.style.opacity = 0.2;
     folderPositionArray[interpolationObjIndexNextFile].domElement.style.pointerEvents = "none";
@@ -2589,6 +2789,10 @@ disableStartPositionAndSize = () => {
 }
 
 enableStartPositionAndSize = () => {
+  const interpolationObjIndexCurrentFile = this.state.interpolationObjIndexCurrentFile;
+  const folderSizeArray = this.state.folderSizeArray;
+  const folderPositionArray = this.state.folderPositionArray;
+
     // disable slider
     folderPositionArray[interpolationObjIndexCurrentFile].domElement.style.opacity = 1.0;
     folderPositionArray[interpolationObjIndexCurrentFile].domElement.style.pointerEvents = "all";
@@ -2615,6 +2819,10 @@ scatter = (vertices, size, color, texture = "") => {
 }
 
 updateBEV = (xPos, yPos, zPos) => {
+  const headerHeight = this.state.headerHeight;
+  const cameraBEV = this.state.cameraBEV;
+  const canvasBEV = this.state.canvasBEV;
+
     let imagePaneHeight = parseInt($("#layout_layout_resizer_top").css("top"), 10);
     let panelTopPos = headerHeight + imagePaneHeight;
     canvasBEV.left = "0px";
@@ -2625,7 +2833,8 @@ updateBEV = (xPos, yPos, zPos) => {
 }
 
 initBev = () => {
-    canvasBEV = document.createElement("canvas");
+    const canvasBEV = document.createElement("canvas");
+    const headerHeight = this.state.headerHeight;
     canvasBEV.id = "canvasBev";
     let wBev = window.innerWidth / 3;
     canvasBEV.width = wBev;
@@ -2636,7 +2845,12 @@ initBev = () => {
     $("body").append(canvasBEV);
     $("#canvasBev").css("top", headerHeight + imagePaneHeight + 2 * hBev);
 
-    cameraBEV = new THREE.OrthographicCamera(window.innerWidth / -4, window.innerWidth / 4, window.innerHeight / 4, window.innerHeight / -4, -5000, 10000);
+    const cameraBEV = new THREE.OrthographicCamera(window.innerWidth / -4, window.innerWidth / 4, window.innerHeight / 4, window.innerHeight / -4, -5000, 10000);
+
+    this.setState({
+      cameraBEV: cameraBEV,
+      canvasBEV: canvasBEV
+    })
     cameraBEV.up = new THREE.Vector3(0, 0, -1);
     cameraBEV.lookAt(new THREE.Vector3(0, -1, 0));
     scene.add(cameraBEV);
@@ -2653,7 +2867,7 @@ showBEV = (xPos, yPos, zPos) => {
 initFrontView = () => {
   const scene = this.state.scene;
 
-    canvasFrontView = document.createElement("canvas");
+    const canvasFrontView = document.createElement("canvas");
     canvasFrontView.id = "canvasFrontView";
     let widthFrontView = window.innerWidth / 3;
     canvasFrontView.width = widthFrontView;
@@ -2661,6 +2875,10 @@ initFrontView = () => {
     let heightFrontView;
     heightFrontView = (window.innerHeight - imagePanelTopPos - headerHeight) / 3;
     canvasFrontView.height = heightFrontView;
+
+    this.setState({
+      canvasFrontView: canvasFrontView
+    })
 
     $("body").append(canvasFrontView);
     $("#canvasFrontView").css("top", headerHeight + imagePanelTopPos + heightFrontView);
@@ -2670,14 +2888,21 @@ initFrontView = () => {
 }
 
 updateFrontView = () =>{
+  const headerHeight = this.state.headerHeight;
+  const rendererFrontView = this.state.rendererFrontView;
+  const canvasFrontView = this.state.canvasFrontView;
+
     let imagePanelTopPos = parseInt($("#layout_layout_resizer_top").css("top"), 10);
     let panelTopPos = imagePanelTopPos + headerHeight + 270;
     canvasFrontView.left = "0px";
     canvasFrontView.top = panelTopPos;
     if (rendererFrontView === undefined) {
-        rendererFrontView = new THREE.WebGLRenderer({
-            antialias: true
-        });
+        this.setState({
+          rendererFrontView: rendererFrontView
+        })
+        // rendererFrontView = new THREE.WebGLRenderer({
+        //     antialias: true
+        // });
     }
     rendererFrontView.setSize(window.innerWidth, window.innerHeight);
     rendererFrontView.setClearColor(0x000000, 1);
@@ -2694,7 +2919,9 @@ showFrontView = () => {
 
 initSideView = () => {
   const scene = this.state.scene;
-    canvasSideView = document.createElement("canvas");
+  const headerHeight = this.state.headerHeight;
+
+    const canvasSideView = document.createElement("canvas");
     canvasSideView.id = "canvasSideView";
     let widthSideView = window.innerWidth / 3;
     let imagePaneHeight = parseInt($("#layout_layout_resizer_top").css("top"), 10);
@@ -2705,9 +2932,13 @@ initSideView = () => {
     $("body").append(canvasSideView);
     $("#canvasSideView").css({top: imagePaneHeight + headerHeight + 'px'});
 
-    cameraSideView = new THREE.OrthographicCamera(window.innerWidth / -4, window.innerWidth / 4, window.innerHeight / 4, window.innerHeight / -4, -5000, 10000);
+    const cameraSideView = new THREE.OrthographicCamera(window.innerWidth / -4, window.innerWidth / 4, window.innerHeight / 4, window.innerHeight / -4, -5000, 10000);
     cameraSideView.lookAt(new THREE.Vector3(1, 0, 0));
 
+    this.setState({
+      cameraSideView: cameraSideView,
+      canvasSideView: canvasSideView
+    })
     // TODO: let user move bounding box also in helperviews (master view)
     // canvasSideView.addEventListener('mousemove', onDocumentMouseMove, false);
     //
@@ -2738,6 +2969,9 @@ initSideView = () => {
 }
 
 updateSideView = () => {
+  const headerHeight = this.state.headerHeight;
+  const canvasSideView = this.state.canvasSideView;
+
     let imagePaneHeight = parseInt($("#layout_layout_resizer_top").css("top"), 10);
     let panelTopPos = headerHeight + imagePaneHeight;
     canvasSideView.left = "0px";
@@ -2776,6 +3010,25 @@ enableInterpolationBtn = () =>{
 
 mouseUpLogic = (ev) => {
   const scene = this.state.scene;
+  const folderBoundingBox3DArray = this.state.folderBoundingBox3DArray;
+  const interpolationObjIndexCurrentFile = this.state.interpolationObjIndexCurrentFile;
+  const transformControls = this.state.transformControls;
+  const birdsEyeViewFlag = this.state.birdsEyeViewFlag;
+  const folderPositionArray = this.state.folderPositionArray;
+  const folderSizeArray = this.state.folderSizeArray;
+  const interpolationMode = this.state.interpolationMode;
+  const dragControls = this.state.dragControls;
+  const useTransformControls = this.state.useTransformControls;
+  const groundPointMouseDown = this.state.groundPointMouseDown;
+  const clickedObjectIndexPrevious = this.state.clickedObjectIndexPrevious;
+  const currentCamera = this.state.currentCamera;
+  const clickedObjectIndex = this.state.clickedObjectIndex;
+  const mouseUp = this.state.mouseUp;
+  const clickedPlaneArray = this.state.clickedPlaneArray;
+  const groundPlaneArray = this.state.groundPlaneArray;
+
+
+
     dragControls = false;
     // check if scene contains transform controls
     useTransformControls = false;
@@ -2832,7 +3085,7 @@ mouseUpLogic = (ev) => {
                     $("#tooltip-" + this.props.contents[this.state.currentFileIndex][i]["class"].charAt(0) + this.props.contents[this.state.currentFileIndex][i]["trackId"]).show();
                 }
                 $("#tooltip-" + this.props.contents[this.state.currentFileIndex][clickedObjectIndex]["class"].charAt(0) + this.props.contents[this.state.currentFileIndex][clickedObjectIndex]["trackId"]).hide();
-                addTransformControls();
+                this.addTransformControls();
 
                 if (transformControls.position !== undefined) {
                     transformControls.detach();
@@ -2970,7 +3223,8 @@ mouseUpLogic = (ev) => {
         }
 
         if (clickFlag === true) {
-            clickedPlaneArray = [];
+            // clickedPlaneArray = [];
+            const clickedPlaneArray = this.state.clickedPlaneArray;
             for (let channelIdx in this.props.camChannels) {
                 if (this.props.camChannels.hasOwnProperty(channelIdx)) {
                     let camChannel = this.props.camChannels[channelIdx].channel;
@@ -3097,13 +3351,18 @@ mouseUpLogic = (ev) => {
                 }
 
             }
-            groundPlaneArray = [];
+
+            this.setState({
+              groundPlaneArray: []
+            })
+            // groundPlaneArray = [];
         }
 
     }
 }
 
 handleMouseUp = (ev) => {
+  const rendererBev = this.state.rendererBev;
     if (rendererBev === undefined) {
       this.mouseUpLogic(ev);
     } else {
@@ -3116,6 +3375,14 @@ handleMouseUp = (ev) => {
 
 mouseDownLogic = (ev) => {
   const scene = this.state.scene;
+  const birdsEyeViewFlag = this.state.birdsEyeViewFlag;
+  const groundPointMouseDown = this.state.groundPointMouseDown;
+  const mouseDown = this.state.mouseDown;
+  const currentCamera = this.state.currentCamera;
+  const clickedPlaneArray = this.state.clickedPlaneArray;
+  const groundPlaneArray = this.state.groundPlaneArray;
+
+
     let rect = ev.target.getBoundingClientRect();
     mouseDown.x = ((ev.clientX - rect.left) / window.innerWidth) * 2 - 1;
     mouseDown.y = -((ev.clientY - rect.top) / window.innerHeight) * 2 + 1;
@@ -3136,10 +3403,19 @@ mouseDownLogic = (ev) => {
     if (clickedObjects.length > 0) {
 
         if (ev.button === 0) {
-            clickedObjectIndex = this.props.cubeArray[this.state.currentFileIndex].indexOf(clickedObjects[0].object);
+            const clickedObjectIndex_ = this.props.cubeArray[this.state.currentFileIndex].indexOf(clickedObjects[0].object);
+
+            this.setState({
+              clickedObjectIndex: clickedObjectIndex_
+            })
+            
             clickFlag = true;
-            clickedPoint = clickedObjects[0].point;
-            clickedCube = this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex];
+            const clickedPoint = clickedObjects[0].point;
+            this.setState({
+              clickedPoint: clickedPoint
+            })
+            // clickedCube = this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex_];
+            clickedCube = this.props.cubeArray[this.state.currentFileIndex][this.state.clickedObjectIndex];
 
             if (birdsEyeViewFlag === true) {
                 let material = new THREE.MeshBasicMaterial({
@@ -3157,16 +3433,16 @@ mouseDownLogic = (ev) => {
                 let normal = clickedObjects[0].face;
                 if ([normal.a, normal.b, normal.c].toString() == [6, 3, 2].toString() || [normal.a, normal.b, normal.c].toString() == [7, 6, 2].toString()) {
                     clickedPlane.rotation.x = Math.PI / 2;
-                    clickedPlane.rotation.y = this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
+                    clickedPlane.rotation.y = this.props.cubeArray[this.state.currentFileIndex][this.state.clickedObjectIndex].rotation.z;
                 } else if ([normal.a, normal.b, normal.c].toString() == [6, 7, 5].toString() || [normal.a, normal.b, normal.c].toString() == [4, 6, 5].toString()) {
                     clickedPlane.rotation.x = -Math.PI / 2;
-                    clickedPlane.rotation.y = -Math.PI / 2 - this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
+                    clickedPlane.rotation.y = -Math.PI / 2 - this.props.cubeArray[this.state.currentFileIndex][this.state.clickedObjectIndex].rotation.z;
                 } else if ([normal.a, normal.b, normal.c].toString() == [0, 2, 1].toString() || [normal.a, normal.b, normal.c].toString() == [2, 3, 1].toString()) {
                     clickedPlane.rotation.x = Math.PI / 2;
-                    clickedPlane.rotation.y = Math.PI / 2 + this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
+                    clickedPlane.rotation.y = Math.PI / 2 + this.props.cubeArray[this.state.currentFileIndex][this.state.clickedObjectIndex].rotation.z;
                 } else if ([normal.a, normal.b, normal.c].toString() == [5, 0, 1].toString() || [normal.a, normal.b, normal.c].toString() == [4, 5, 1].toString()) {
                     clickedPlane.rotation.x = -Math.PI / 2;
-                    clickedPlane.rotation.y = -this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex].rotation.z;
+                    clickedPlane.rotation.y = -this.props.cubeArray[this.state.currentFileIndex][this.state.clickedObjectIndex].rotation.z;
                 } else if ([normal.a, normal.b, normal.c].toString() == [3, 6, 4].toString() || [normal.a, normal.b, normal.c].toString() == [1, 3, 4].toString()) {
                     clickedPlane.rotation.y = -Math.PI
                 }
@@ -3177,10 +3453,15 @@ mouseDownLogic = (ev) => {
 
         } else if (ev.button === 2) {
             // rightclick
-            clickedObjectIndex = this.props.cubeArray[this.state.currentFileIndex].indexOf(clickedObjects[0].object);
-            let bboxClass = this.props.contents[this.state.currentFileIndex][clickedObjectIndex]["class"];
-            let trackId = this.props.contents[this.state.currentFileIndex][clickedObjectIndex]["trackId"];
-            this.deleteObject(bboxClass, trackId, clickedObjectIndex);
+            const clickedObjectIndex_ = this.props.cubeArray[this.state.currentFileIndex].indexOf(clickedObjects[0].object);
+
+            this.setState({
+              clickedObjectIndex: clickedObjectIndex_
+            })
+
+            let bboxClass = this.props.contents[this.state.currentFileIndex][this.state.clickedObjectIndex]["class"];
+            let trackId = this.props.contents[this.state.currentFileIndex][this.state.clickedObjectIndex]["trackId"];
+            this.deleteObject(bboxClass, trackId, this.state.clickedObjectIndex);
             // move button to left
             $("#left-btn").css("left", -70);
         }//end right click
@@ -3190,8 +3471,13 @@ mouseDownLogic = (ev) => {
         }
         if (birdsEyeViewFlag === true) {
             console.log("unselected");
-            clickedObjectIndex = -1;
-            groundPlaneArray = [];
+            // clickedObjectIndex = -1;
+            this.setState({
+              clickedObjectIndex: -1,
+              groundPlaneArray: []
+            })
+
+            // groundPlaneArray = [];
             let material = new THREE.MeshBasicMaterial({
                 color: 0x000000,
                 wireframe: false,
@@ -3204,14 +3490,15 @@ mouseDownLogic = (ev) => {
             groundPlane.position.x = 0;
             groundPlane.position.y = 0;
             groundPlane.position.z = 0;
-            groundPlaneArray.push(groundPlane);
-            let groundObject = ray.intersectObjects(groundPlaneArray);
+            this.state.groundPlaneArray.push(groundPlane);
+            let groundObject = ray.intersectObjects(this.state.groundPlaneArray);
             groundPointMouseDown = groundObject[0].point;
         }
     }
 }
 
 handleMouseDown = (ev) => {
+  const rendererBev = this.state.rendererBev;
     if (rendererBev === undefined) {
       this.mouseDownLogic(ev);
     } else {
@@ -3227,6 +3514,7 @@ isFullscreen = () => {
 
 initViews = () => {
   const scene = this.state.scene;
+  const headerHeight = this.state.headerHeight;
     let imagePanelTopPos = parseInt($("#layout_layout_resizer_top").css("top"), 10);
     let viewHeight;
     if (this.isFullscreen() === true) {
@@ -3235,7 +3523,7 @@ initViews = () => {
         viewHeight = Math.round((screen.height + 24 - headerHeight - imagePanelTopPos) / 3) - 40;
     }
 
-    views = [
+    const views = [
         // main view
         {
             left: 0,
@@ -3368,7 +3656,11 @@ disableChooseSequenceDropDown = (chooseSequenceDropDown) => {
 createGrid = () => {
   const scene = this.state.scene;
   this.props.removeObject("grid");
-    grid = new THREE.GridHelper(100, 100);
+    const grid = new THREE.GridHelper(100, 100);
+
+    this.setState({
+      grid: grid
+    })
     let posZLidar;
     if (this.state.currentDataset === this.state.datasets.NuScenes) {
         posZLidar = this.props.positionLidarNuscenes[2];
@@ -3385,6 +3677,8 @@ createGrid = () => {
 }
 
 toggleKeyboardNavigation = () => {
+  const keyboardNavigation = this.state.keyboardNavigation;
+
     keyboardNavigation = !keyboardNavigation;
     if (keyboardNavigation === true) {
         this.setPointerLockControls();
@@ -3539,8 +3833,8 @@ loadDetectedBoxes = () => {
 }
 
 init = () => {
-    if (WEBGL.isWebGLAvailable() === false) {
-        document.body.appendChild(WEBGL.getWebGLErrorMessage());
+    if (this.WEBGL.isWebGLAvailable() === false) {
+        document.body.appendChild(this.WEBGL.getWebGLErrorMessage());
     }
 
     const currentState = this.state;
@@ -3609,10 +3903,29 @@ init = () => {
 
     const keyboard = this.state.keyboard;
     const clock = this.state.clock;
+    // state 값 
     const scene = this.state.scene;
     const canvas3D = this.state.canvas3D;
+    // render 값 
     const renderer = this.state.renderer;
     const projector = this.state.projector;
+    const folderBoundingBox3DArray = this.state.folderBoundingBox3DArray;
+    const interpolationObjIndexCurrentFile = this.state.interpolationObjIndexCurrentFile;
+    const pointCloudScanNoGroundList = this.state.pointCloudScanNoGroundList;
+    const pointCloudScanList = this.state.pointCloudScanList;
+    const birdsEyeViewFlag = this.state.birdsEyeViewFlag;
+    const folderPositionArray = this.state.folderPositionArray;
+    const folderSizeArray = this.state.folderSizeArray;
+    const interpolationMode = this.state.interpolationMode;
+    const guiAnnotationClasses = this.state.guiAnnotationClasses;
+    const parametersBoundingBox = this.state.parametersBoundingBox;
+    const guiOptions = this.state.guiOptions;
+    const guiOptionsOpened = this.state.guiOptionsOpened;
+    const showProjectedPointsFlag = this.state.showProjectedPointsFlag;
+    const filterGround = this.state.filterGround;
+    const guiBoundingBoxAnnotationMap = this.state.guiBoundingBoxAnnotationMap;
+    const grid = this.state.grid;
+    const interpolateBtn = this.state.interpolateBtn;
 
     // keyboard = new KeyboardState();
     // clock = new THREE.Clock();
@@ -3635,13 +3948,14 @@ init = () => {
 
     canvas3D = document.getElementById('canvas3d');
 
+
     if (birdsEyeViewFlag === false) {
-        canvas3D.removeEventListener('keydown', canvas3DKeyDownHandler);
-        canvas3D.addEventListener('keydown', canvas3DKeyDownHandler);
+        canvas3D.removeEventListener('keydown', this.canvas3DKeyDownHandler);
+        canvas3D.addEventListener('keydown', this.canvas3DKeyDownHandler);
     }
 
-    window.removeEventListener('keydown', keyDownHandler);
-    window.addEventListener('keydown', keyDownHandler);
+    window.removeEventListener('keydown', this.keyDownHandler);
+    window.addEventListener('keydown', this.keyDownHandler);
 
     renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -3650,6 +3964,12 @@ init = () => {
         alpha: true,
         preserveDrawingBuffer: true
     });
+
+    // setstate
+    this.setState({
+      renderer: renderer,
+      canvas3D: canvas3D
+    })
     // renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -3663,13 +3983,13 @@ init = () => {
 
     // stats = new Stats();
     // canvas3D.appendChild(stats.dom);
-    window.addEventListener('resize', onWindowResize, false);
+    window.addEventListener('resize', this.onWindowResize, false);
     window.addEventListener("contextmenu", function (e) {
         e.preventDefault();
     }, false);
 
     projector = new THREE.Projector();
-    canvas3D.addEventListener('mousemove', onDocumentMouseMove, false);
+    canvas3D.addEventListener('mousemove', this.onDocumentMouseMove, false);
 
     canvas3D.onmousedown = function (ev) {
       this.handleMouseDown(ev);
@@ -3737,7 +4057,7 @@ init = () => {
                 this.hideMasterView();
             });
         chooseSequenceDropDown = guiOptions.add(parameters, 'sequences', [
-            labelTool.sequencesNuScenes[0]]).name("Choose Sequence")
+          this.props.sequencesNuScenes[0]]).name("Choose Sequence")
             .onChange(function (value) {
               this.changeSequence(value);
               this.hideMasterView();
@@ -3792,10 +4112,15 @@ init = () => {
         });
 
         let hideOtherAnnotationsCheckbox = guiOptions.add(parameters, 'hide_other_annotations').name('Hide other annotations').listen();
+        const hideOtherAnnotations = this.state.hideOtherAnnotations;
         hideOtherAnnotationsCheckbox.onChange(function (value) {
-            hideOtherAnnotations = value;
+
+            this.setState({
+              hideOtherAnnotations: value
+            })
+            // hideOtherAnnotations = value;
             let selectionIndex = this.props.getSelectionIndex();
-            if (hideOtherAnnotations === true) {
+            if (this.state.hideOtherAnnotations === true) {
                 for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
                     // remove 3D labels
                     let mesh = this.props.cubeArray[this.state.currentFileIndex][i];
@@ -3845,7 +4170,8 @@ init = () => {
         let interpolationModeCheckbox = guiOptions.add(parameters, 'interpolation_mode').name('Interpolation Mode');
         interpolationModeCheckbox.domElement.id = 'interpolation-checkbox';
         // if scene contains no objects then deactivate checkbox
-        if (annotationFileExist(undefined, undefined) === false || interpolationMode === false) {
+        // ajax_wrapper.js에 있음
+        if (this.props.annotationFileExist(undefined, undefined) === false || interpolationMode === false) {
             // no annotation file exist -> deactivate checkbox
             this.disableInterpolationModeCheckbox(interpolationModeCheckbox.domElement);
         }

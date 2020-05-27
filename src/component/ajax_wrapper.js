@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import labelTool from "./base_label_tool";
 import image_label_tool from "./image_label_tool";
+import pcdLabelTool from "./pcd_label_tool";
 
 export default class AjaxWrapper extends Component {
 
@@ -142,5 +143,13 @@ export default class AjaxWrapper extends Component {
     } else {
         return annotationsJSONArray;
     }
+  }
+
+  render() {
+    return(
+      <pcdLabelTool
+        annotationFileExist={this.annotationFileExist}
+      />
+    )
   }
 }
