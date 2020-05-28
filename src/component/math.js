@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import pcdLabelTool from "./pcd_label_tool";
 
 export default class Math extends Component {
 //calculate product of matrix
@@ -131,6 +132,12 @@ export default class Math extends Component {
     //we've done all operations, C should be the identity
     //matrix I should be the inverse:
     return I;
+  }
+
+  render(){
+    <pcdLabelTool
+      matrixProduct3x4 = {()=>this.matrixProduct3x4}
+    />
   }
 }
 

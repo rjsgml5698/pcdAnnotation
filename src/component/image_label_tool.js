@@ -1,5 +1,9 @@
-import React, { useContext } from 'react';
+import React, { Component } from 'react';
 import boundingbox from './boundingbox.js';
+import pcdLabelTool from './pcd_label_tool.js';
+import baseBabelTools from './base_label_tool.js';
+import $ from 'jquery';
+window.$ = $;
 
 export default class ImageLabelTools extends Component {
   constructor(props){
@@ -33,38 +37,38 @@ export default class ImageLabelTools extends Component {
 
   select = (newIndex, channel) => {
 
-      for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
+      for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
           // if (annotationObjects.contents[i]["rect"] !== undefined) {
           //     removeBoundingBoxHighlight(i);
           // }
-          if (annotationObjects.contents[this.state.currentFileIndex][i]["text"] !== undefined) {
-              removeTextBox(i);
+          if (this.props.contents[this.state.currentFileIndex][i]["text"] !== undefined) {
+              this.removeTextBox(i);
           }
 
       }
-      if (annotationObjects.contents[this.state.currentFileIndex][newIndex]["channels"][0].channel === channel) {
-          if (annotationObjects.contents[this.state.currentFileIndex][newIndex]["channels"][0]["lines"] !== undefined && annotationObjects.contents[this.state.currentFileIndex][newIndex]["channels"][0]["lines"][0] !== undefined
-              && !isNaN(annotationObjects.contents[this.state.currentFileIndex][newIndex]["channels"][0]["lines"][0]) && isFinite(annotationObjects.contents[this.state.currentFileIndex][newIndex]["channels"][0]["lines"][0])) {
+      if (this.props.contents[this.state.currentFileIndex][newIndex]["channels"][0].channel === channel) {
+          if (this.props.contents[this.state.currentFileIndex][newIndex]["channels"][0]["lines"] !== undefined && this.props.contents[this.state.currentFileIndex][newIndex]["channels"][0]["lines"][0] !== undefined
+              && !isNaN(this.props.contents[this.state.currentFileIndex][newIndex]["channels"][0]["lines"][0]) && isFinite(this.props.contents[this.state.currentFileIndex][newIndex]["channels"][0]["lines"][0])) {
               // if (annotationObjects.contents[newIndex]["rect"] !== undefined) {
               // emphasize only possible if 2D bb exists
-              addTextBox(newIndex, channel);
+              this.addTextBox(newIndex, channel);
               // emphasizeBBox(newIndex, channel);
           }
       } else {
-          if (annotationObjects.contents[this.state.currentFileIndex][newIndex]["channels"][1]["lines"] !== undefined && annotationObjects.contents[this.state.currentFileIndex][newIndex]["channels"][1]["lines"][0] !== undefined
-              && !isNaN(annotationObjects.contents[this.state.currentFileIndex][newIndex]["channels"][1]["lines"][0]) && isFinite(annotationObjects.contents[this.state.currentFileIndex][newIndex]["channels"][1]["lines"][0])) {
-              addTextBox(newIndex, channel);
+          if (this.props.contents[this.state.currentFileIndex][newIndex]["channels"][1]["lines"] !== undefined && this.props.contents[this.state.currentFileIndex][newIndex]["channels"][1]["lines"][0] !== undefined
+              && !isNaN(this.props.contents[this.state.currentFileIndex][newIndex]["channels"][1]["lines"][0]) && isFinite(this.props.contents[this.state.currentFileIndex][newIndex]["channels"][1]["lines"][0])) {
+              this.addTextBox(newIndex, channel);
           }
       }
 
       // unhighlight bb in BEV
-      for (let mesh in labelTool.cubeArray[this.state.currentFileIndex]) {
-          let meshObject = labelTool.cubeArray[this.state.currentFileIndex][mesh];
+      for (let mesh in this.props.cubeArray[this.state.currentFileIndex]) {
+          let meshObject = this.props.cubeArray[this.state.currentFileIndex][mesh];
           meshObject.material.opacity = 0.9;
       }
       // highlight selected bb in BEV
-      if (labelTool.cubeArray[this.state.currentFileIndex][newIndex] !== undefined) {
-          labelTool.cubeArray[this.state.currentFileIndex][newIndex].material.opacity = 0.1;
+      if (this.props.cubeArray[this.state.currentFileIndex][newIndex] !== undefined) {
+        this.props.cubeArray[this.state.currentFileIndex][newIndex].material.opacity = 0.1;
       }
   }
 
@@ -93,8 +97,8 @@ export default class ImageLabelTools extends Component {
   // });
 
   initialize = (camChannel) => {
-      let canvas = this.state.canvasArray[getChannelIndexByName(camChannel)];
-      this.state.canvasParamsArray[getChannelIndexByName(camChannel)] = {
+      let canvas = this.state.canvasArray[this.getChannelIndexByName(camChannel)];
+      this.state.canvasParamsArray[this.getChannelIndexByName(camChannel)] = {
           x: canvas.offsetLeft,
           y: canvas.offsetTop,
           width: canvas.offsetWidth,
@@ -107,8 +111,8 @@ export default class ImageLabelTools extends Component {
           width = 320;
           height = 180;
       }
-      changeCanvasSize(width, height, camChannel);
-      labelTool.addResizeEventForImage();
+      this.changeCanvasSize(width, height, camChannel);
+      this.props.addResizeEventForImage();
   }
 
   // labelTool.onInitialize("CAM_FRONT_LEFT", function () {
@@ -140,14 +144,14 @@ export default class ImageLabelTools extends Component {
     const imageArray = this.state.imageArray;
 
       let imgPath = "input/" + this.state.currentDataset + "/" + this.state.currentSequence + "/images/" + camChannel + "/" + this.state.fileNames[fileIndex] + ".jpg";
-      let channelIdx = getChannelIndexByName(camChannel);
+      let channelIdx = this.getChannelIndexByName(camChannel);
       let paper = this.state.paperArrayAll[fileIndex][channelIdx];
       this.state.imageArray[channelIdx] = paper.image(imgPath, 0, 0, "100%", "100%");
   }
 
   changeClass = (bbIndex, newClass) => {
-      let annotation = annotationObjects.contents[this.state.currentFileIndex][bbIndex];
-      let color = classesBoundingBox[newClass].color;
+      let annotation = this.props.contents[this.state.currentFileIndex][bbIndex];
+      let color = this.props.BoundingBoxClassify[newClass].color;
       // update color in all 6 channels
       for (let i = 0; i < annotation["channels"].length; i++) {
           if (annotation["channels"][i]["lines"] !== undefined && annotation["channels"][i]["lines"][0] !== undefined) {
@@ -222,7 +226,7 @@ export default class ImageLabelTools extends Component {
       if (this.state.isDragging) {
           return;
       }
-      setCursor("hand");//crosshair
+      this.setCursor("hand");//crosshair
       // action = "add";
       // let bbox = undefined;
       // let selectedBoundingBox = annotationObjects.getSelectedBoundingBox();
@@ -275,26 +279,26 @@ export default class ImageLabelTools extends Component {
       const mouseY = this.state.mouseY;
 
       img.mousemove(function (e) {
-          let e2 = convertPositionToPaper(e);
+          let e2 = this.convertPositionToPaper(e);
           mouseX = e.offsetX;
           mouseY = e.offsetY;
-          setAction(e2);
+          this.setAction(e2);
       });
 
       img.mousedown(function (e) {
-          let e2 = convertPositionToPaper(e);
+          let e2 = this.convertPositionToPaper(e);
           // 3: rightclick
           if (e2.which != 3 || this.state.isDragging) {
               return;
           }
-          let clickedBBIndex = getClickedIndex(e2);
+          let clickedBBIndex = this.getClickedIndex(e2);
           if (clickedBBIndex != -1) {
-              annotationObjects.remove(clickedBBIndex);
-              annotationObjects.selectEmpty();
+            this.props.remove(clickedBBIndex);
+            this.props.selectEmpty();
           } else {
               // no bounding box was selected
               // remove selection from current target
-              let selectedBBIndex = annotationObjects.getSelectionIndex();
+              let selectedBBIndex = this.props.getSelectionIndex();
               // removeBoundingBoxHighlight(selectedBBIndex);
               this.removeTextBox(selectedBBIndex);
           }
@@ -569,16 +573,16 @@ export default class ImageLabelTools extends Component {
       let mouseXPos = e.offsetX;
       let mouseYPos = e.offsetY;
       let targetIndex = -1;
-      for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
-          for (let j = 0; j < annotationObjects.contents[this.state.currentFileIndex][i]["channels"].length; j++) {
-              let points2D = annotationObjects.contents[this.state.currentFileIndex][i]["channels"][j]["points2D"];
+      for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+          for (let j = 0; j < this.props.contents[this.state.currentFileIndex][i]["channels"].length; j++) {
+              let points2D = this.props.contents[this.state.currentFileIndex][i]["channels"][j]["points2D"];
               let xPosArray = [];
               let yPosArray = [];
               for (let k = 0; k < points2D.length; k++) {
                   xPosArray.push(points2D[k].x);
                   yPosArray.push(points2D[k].y);
               }
-              if (isWithinPolygon(points2D.length, xPosArray, yPosArray, mouseXPos, mouseYPos)) {
+              if (this.isWithinPolygon(points2D.length, xPosArray, yPosArray, mouseXPos, mouseYPos)) {
                   return i;
               }
           }
@@ -633,22 +637,22 @@ export default class ImageLabelTools extends Component {
   }
 
   getChannelIndexByName(camChannel) {
-      for (let channelObj in labelTool.camChannels) {
-          if (labelTool.camChannels.hasOwnProperty(channelObj)) {
-              let channelObject = labelTool.camChannels[channelObj];
+      for (let channelObj in this.props.camChannels) {
+          if (this.props.camChannels.hasOwnProperty(channelObj)) {
+              let channelObject = this.props.camChannels[channelObj];
               if (camChannel === channelObject.channel) {
-                  return labelTool.camChannels.indexOf(channelObject);
+                  return this.props.camChannels.indexOf(channelObject);
               }
           }
       }
   }
 
   changeCanvasSize(width, height, camChannel) {
-      let channelIdx = getChannelIndexByName(camChannel);
+      let channelIdx = this.getChannelIndexByName(camChannel);
       let paper = this.state.paperArray[channelIdx];
       let canvas = this.state.canvasArray[channelIdx];
 
-      fontSize = this.state.fontSize;
+      const fontSize = this.state.fontSize;
 
       // for (let canvasElem in canvasArray) {
       // let canvasElement = canvasArray[canvasElem];
@@ -679,14 +683,14 @@ export default class ImageLabelTools extends Component {
   }
 
   addTextBox(bbIndex, camChannel) {
-      let bbox = annotationObjects.contents[this.state.currentFileIndex][bbIndex];
+      let bbox = this.props.contents[this.state.currentFileIndex][bbIndex];
       let trackId = bbox["trackId"];
-      let channelIdx = getChannelIndexByName(camChannel);
+      let channelIdx = this.getChannelIndexByName(camChannel);
       let posX = bbox["channels"][channelIdx]["lines"][5].attr("x");
       let posY = bbox["rect"].attr("y");
       let label = bbox["class"];
       let firstLetterOfClass = label.charAt(0);
-      let paper = this.state.paperArray[getChannelIndexByName(camChannel)];
+      let paper = this.state.paperArray[this.getChannelIndexByName(camChannel)];
       bbox["textBox"] =
           {
               text: paper.text(posX, posY - this.state.fontSize / 2, "#" + firstLetterOfClass + trackId + " " + label)
@@ -699,7 +703,7 @@ export default class ImageLabelTools extends Component {
       let box = bbox["textBox"]["text"].getBBox();
       bbox["textBox"]["box"] = paper.rect(box.x, box.y, box.width, box.height)
           .attr({
-              fill: classesBoundingBox[label].color,
+              fill: this.props.BoundingBoxClassify[label].color,
               stroke: "none"
           });
       bbox["textBox"]["box"].node.setAttribute("pointer-events", "none");
@@ -708,7 +712,7 @@ export default class ImageLabelTools extends Component {
   }
 
   removeTextBox = (index) => {
-      let bbox = annotationObjects.contents[this.state.currentFileIndex][index];
+      let bbox = this.props.contents[this.state.currentFileIndex][index];
       if (bbox["textBox"] === undefined) {
           return;
       }
@@ -727,10 +731,20 @@ export default class ImageLabelTools extends Component {
   }
 
   adjustTextBox = (index) => {
-      let rect = annotationObjects.contents[this.state.currentFileIndex][index]["rect"];
-      let textBox = annotationObjects.contents[this.state.currentFileIndex][index]["textBox"];
+      let rect = this.props.contents[this.state.currentFileIndex][index]["rect"];
+      let textBox = this.props.contents[this.state.currentFileIndex][index]["textBox"];
       textBox["text"].attr({x: rect.attr("x"), y: rect.attr("y") - this.state.fontSize / 2});
       textBox["box"].attr({x: rect.attr("x"), y: rect.attr("y") - this.state.fontSize - 1});
+  }
+
+  render(){ 
+    return(
+      <pcdLabelTool 
+        getChannelIndexByName = {()=>this.getChannelIndexByName}
+        paperArrayAll ={this.state.paperArrayAll}
+      />
+
+    )
   }
 }
 

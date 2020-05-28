@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import baseBabelTools from './base_label_tool.js';
+import imageLabelTools from './image_label_tool.js';
 import pcdLabelTool from './pcd_label_tool.js';
 import classBoundingBox from './classesBoundingBox.js';
 import $ from 'jquery';
@@ -259,7 +260,7 @@ constructor(props){
 
   drawLine(channelIdx, pointStart, pointEnd, color){
     if (pointStart !== undefined && pointEnd !== undefined && isFinite(pointStart.x) && isFinite(pointStart.y) && isFinite(pointEnd.x) && isFinite(pointEnd.y)) {
-        let line = paperArrayAll[this.state.currentFileIndex][channelIdx].path(["M", pointStart.x, pointStart.y, "L", pointEnd.x, pointEnd.y]);
+        let line = this.props.paperArrayAll[this.state.currentFileIndex][channelIdx].path(["M", pointStart.x, pointStart.y, "L", pointEnd.x, pointEnd.y]);
         line.attr("stroke", color);
         line.attr("stroke-width", 3);
         return line;
@@ -302,10 +303,21 @@ constructor(props){
         select={()=>this.select}
         getSelectionIndex={()=>this.getSelectionIndex}
         selectEmpty={()=>this.selectEmpty}
+        // renderer는 three.js의 renderer로 넘어가야함
+        renderer={this.state.renderer}
         remove={()=>this.remove}
         removeSelectedBoundingBox={()=>this.removeSelectedBoundingBox}
         clear={()=>this.clear}
         drawLine={()=>this.drawLine}
+        __selectionIndexCurrentFrame={this.state.__selectionIndexCurrentFrame}
+      />,
+
+      <imageLabelTools 
+        contents={this.state.contents}
+        remove={()=>this.remove}
+        selectEmpty={()=>this.selectEmpty}
+        getSelectionIndex={()=>this.getSelectionIndex}
+
       />
     )
   }

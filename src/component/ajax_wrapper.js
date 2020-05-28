@@ -149,6 +149,7 @@ export default class AjaxWrapper extends Component {
     return(
       <pcdLabelTool
         annotationFileExist={this.annotationFileExist}
+        pad={()=>this.pad}
       />
     )
   }

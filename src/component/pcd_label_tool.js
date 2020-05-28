@@ -50,7 +50,7 @@ export default class pcdLabelTool extends Component {
 
       clock : new THREE.Clock(),
       container : null,
-      keyboard : new THREE.KeyboardState(),
+      // keyboard : new THREE.KeyboardState(),
       moveForward : false,
       moveBackward : false,
       moveLeft : false,
@@ -76,9 +76,11 @@ export default class pcdLabelTool extends Component {
 
       // let keyboard = new KeyboardState();
 
-      guiAnnotationClasses : new dat.GUI({autoPlace: true, width: 90, resizable: false}),
+      // 사이드 메뉴 조작부분 현재는 주석처리
+      // guiAnnotationClasses : new dat.GUI({autoPlace: true, width: 90, resizable: false}),
+      // guiOptions : new dat.GUI({autoPlace: true, width: 350, resizable: false}),
+
       guiBoundingBoxAnnotationMap: null,
-      guiOptions : new dat.GUI({autoPlace: true, width: 350, resizable: false}),
       guiOptionsOpened : true,
       numGUIOptions : 17,
       showProjectedPointsFlag : false,
@@ -163,8 +165,8 @@ getObjectIndexByTrackIdAndClass = (trackId, className, fileIdx) => {
 // labelTool은 base_babel_tools에 있음
 componentDidMount(){
   this.props.onInitialize("PCD", function () {
-    if (!Detector.webgl) {
-        Detector.addGetWebGLMessage();
+    if (!this.Detector.webgl) {
+      this.Detector.addGetWebGLMessage();
     }
     this.init();
     this.animate();
@@ -298,7 +300,7 @@ interpolate = () => {
         case "classLabel":
             let objectIndex = Number(lastOperation["objectIndex"]);
             let previousClassLabel = lastOperation["previousClass"];
-            annotationObjects.changeClass(objectIndex, previousClassLabel);
+            this.props.changeClass(objectIndex, previousClassLabel);
             // select previous class in class picker
             break;
         case "trackId":
@@ -388,7 +390,6 @@ interpolate = () => {
 // };
 
 /*********** Event handlers **************/
-
 
 // Rotate an object around an arbitrary axis in world space
 rotateAroundWorldAxis = (object, axis, radians) => {
@@ -557,7 +558,7 @@ loadPCDData = () => {
 
     // draw positions of cameras
     if (this.props.showCameraPosition === true) {
-        drawCameraPosition();
+        this.drawCameraPosition();
     }
 
     // let mtlLoader = new MTLLoader();
@@ -716,7 +717,7 @@ paddingRight = (s, c, n) => {
 download = () => {
     let annotations = this.props.createAnnotations();
     let outputString = JSON.stringify(annotations);
-    outputString = b64EncodeUnicode(outputString);
+    outputString = this.b64EncodeUnicode(outputString);
     $($('#bounding-box-3d-menu ul li')[0]).children().first().attr('href', 'data:application/octet-stream;base64,' + outputString).attr('download', this.state.currentDataset + "_" + this.state.currentSequence + '_annotations.txt');
 }
 
@@ -725,7 +726,7 @@ downloadVideo = () => {
     if (this.state.currentDataset === this.state.datasets.NuScenes) {
       this.props.takeCanvasScreenshot = true;
       this.props.changeFrame(0);
-        initScreenshotTimer();
+        this.initScreenshotTimer();
     }
 }
 
@@ -746,9 +747,9 @@ switchView = () => {
       this.props.selectedMesh = undefined;
         transformControls.detach();
         transformControls = undefined;
-        hideMasterView();
+        this.hideMasterView();
     }
-    setCamera();
+    this.setCamera();
     this.props.removeObject("planeObject");
 }
 
@@ -799,6 +800,8 @@ addClassTooltip = (fileIndex, className, trackId, color, bbox) => {
 get3DLabel = (parameters) => {
     let bbox = parameters;
     let cubeGeometry = new THREE.BoxBufferGeometry(1.0, 1.0, 1.0);//width, length, height
+    const scene = this.state.scene;
+
     let color;
     if (parameters.fromFile === true) {
         if (this.state.showOriginalNuScenesLabels === true && this.state.currentDataset === this.state.datasets.NuScenes) {
@@ -824,7 +827,7 @@ get3DLabel = (parameters) => {
     cubeMesh.name = "cube-" + parameters.class.charAt(0) + parameters.trackId;
 
     // get bounding box from object
-    let boundingBoxColor = increaseBrightness(color, 50);
+    let boundingBoxColor = this.increaseBrightness(color, 50);
     let edgesGeometry = new THREE.EdgesGeometry(cubeMesh.geometry);
     let edgesMaterial = new THREE.LineBasicMaterial({color: boundingBoxColor, linewidth: 4});
     let edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
@@ -833,10 +836,10 @@ get3DLabel = (parameters) => {
     // add object only to scene if file index is equal to current file index
     if (parameters.fileIndex === this.state.currentFileIndex) {
         scene.add(cubeMesh);
-        addBoundingBoxGui(bbox, undefined);
+        this.addBoundingBoxGui(bbox, undefined);
     }
     // class tooltip
-    addClassTooltip(parameters.fileIndex, parameters.class, parameters.trackId, color, bbox);
+    this.addClassTooltip(parameters.fileIndex, parameters.class, parameters.trackId, color, bbox);
     this.props.cubeArray[parameters.fileIndex].push(cubeMesh);
     return bbox;
 }
@@ -855,7 +858,7 @@ update2DBoundingBox = (fileIndex, objectIndex, isSelected) => {
                 let height = this.props.contents[fileIndex][objectIndex]["height"];
                 let rotationY = this.props.contents[fileIndex][objectIndex]["rotationY"];
                 let channel = channelObj.channel;
-                channelObj.projectedPoints = calculateProjectedBoundingBox(x, y, z, width, length, height, channel, rotationY);
+                channelObj.projectedPoints = this.calculateProjectedBoundingBox(x, y, z, width, length, height, channel, rotationY);
                 // remove previous drawn lines of all 6 channels
                 for (let lineObj in channelObj.lines) {
                     if (channelObj.lines.hasOwnProperty(lineObj)) {
@@ -867,7 +870,7 @@ update2DBoundingBox = (fileIndex, objectIndex, isSelected) => {
                 }
                 if (channelObj.projectedPoints !== undefined && channelObj.projectedPoints.length === 8) {
                     let horizontal = width > height;
-                    channelObj.lines = calculateAndDrawLineSegments(channelObj, className, horizontal, isSelected);
+                    channelObj.lines = this.calculateAndDrawLineSegments(channelObj, className, horizontal, isSelected);
                 }
             }
         }
@@ -962,11 +965,11 @@ deleteObject = (bboxClass, trackId, labelIndex) => {
   const folderBoundingBox3DArray = this.state.folderBoundingBox3DArray;
   const folderSizeArray = this.state.folderSizeArray;
   const interpolationMode = this.state.interpolationMode;
-  const guiOptions = this.state.guiOptions;
+  // const guiOptions = this.state.guiOptions;
   const folderPositionArray = this.state.folderPositionArray;
 
 
-    guiOptions.removeFolder(bboxClass + ' ' + trackId);
+    // guiOptions.removeFolder(bboxClass + ' ' + trackId);
     // hide 3D bounding box instead of removing it (in case redo button will be pressed)
     if (transformControls !== undefined) {
         transformControls.detach();
@@ -1045,12 +1048,13 @@ addBoundingBoxGui = (bbox, bboxEndParams) => {
   const folderPositionArray = this.state.folderPositionArray;
   const folderSizeArray = this.state.folderSizeArray;
   const interpolationMode = this.state.interpolationMode;
-  const guiOptions = this.state.guiOptions;
+  // const guiOptions = this.state.guiOptions;
 
 
     let insertIndex = folderBoundingBox3DArray.length;
-    let bb = guiOptions.addFolder(bbox.class + ' ' + bbox.trackId);
-    folderBoundingBox3DArray.push(bb);
+    // 임시 주석
+    // let bb = guiOptions.addFolder(bbox.class + ' ' + bbox.trackId);
+    // folderBoundingBox3DArray.push(bb);
 
     let minXPos = -100;
     let minYPos = -100;
@@ -1834,6 +1838,8 @@ setCamera = () => {
   const canvas3D = this.state.canvas3D;
   const keyboardNavigation = this.state.keyboardNavigation;
   const currentCamera = this.state.currentCamera;
+  const currentOrbitControls = this.state.currentOrbitControls;
+
   // const pointerLockControls = this.state.pointerLockControls;
 
     if (birdsEyeViewFlag === false) {
@@ -1864,11 +1870,12 @@ setCamera = () => {
         canvas3D.removeEventListener('keydown', this.canvas3DKeyDownHandler);
         canvas3D.addEventListener('keydown', this.canvas3DKeyDownHandler);
 
-        if (keyboardNavigation === true) {
-            this.setPointerLockControls();
-        } else {
-            this.setOrbitControls();
-        }
+        // 아직까진 keyboard 조작이 필요없어 임시 주석 처리함
+        // if (keyboardNavigation === true) {
+        //     this.setPointerLockControls();
+        // } else {
+        //     this.setOrbitControls();
+        // }
 
         // TODO: enable to fly through the 3d scene using keys
         // let onKeyDown = function (event) {
@@ -1941,7 +1948,7 @@ setCamera = () => {
         currentCamera.position.set(0, 0, 5);
         currentCamera.up.set(0, 0, 1);
 
-        const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
+        // const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
         currentOrbitControls.enablePan = true;
         currentOrbitControls.enableRotate = false;
         currentOrbitControls.autoRotate = false;
@@ -2054,6 +2061,7 @@ updateScreenPosition = () => {
   const headerHeight = this.state.headerHeight;
   const currentCamera = this.state.currentCamera;
   const spriteBehindObject = this.state.spriteBehindObject;
+  const renderer = this.state.renderer;
 
     for (let i = 0; i < this.props.cubeArray[this.state.currentFileIndex].length; i++) {
         let cubeObj = this.props.cubeArray[this.state.currentFileIndex][i];
@@ -2080,7 +2088,9 @@ update = () => {
   const birdsEyeViewFlag = this.state.birdsEyeViewFlag;
   const currentCamera = this.state.currentCamera;
   const mousePos = this.state.mousePos;
-
+  const scene = this.state.scene;
+  const keyboard = this.state.keyboard;
+  const clock = this.state.clock;
 
   const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
     // disable rotation of orbit controls if object selected
@@ -2195,7 +2205,7 @@ update = () => {
 
 //draw animation
 animate = () => {
-    requestAnimationFrame(animate);
+    requestAnimationFrame(this.animate);
 
     // var delta = clock.getDelta();
     // controls.update(delta);
@@ -2289,6 +2299,7 @@ animate = () => {
     const pointerLockControls = this.state.pointerLockControls;
     const keyboardNavigation = this.state.keyboardNavigation;
     const pointerLockObject = this.state.pointerLockObject;
+    const prevTime = this.state.prevTime;
 
     this.update();
     if (keyboardNavigation === true && pointerLockControls !== undefined) {
@@ -2343,7 +2354,7 @@ animate = () => {
         } else {
             pointerLockObject.rotateY(0);//pitch
         }
-        if (rotateRight) {
+        if (this.state.rotateRight) {
             pointerLockObject.rotateY(-0.01);//pitch
         } else {
             pointerLockObject.rotateY(0);//pitch
@@ -2433,7 +2444,7 @@ rotatePoint = (pointX, pointY, originX, originY, angle) => {
 
 
 calculateProjectedBoundingBox = (xPos, yPos, zPos, width, length, height, channel, rotationY) => {
-    let idx = getChannelIndexByName(channel);
+    let idx = this.props.getChannelIndexByName(channel);
     // TODO: calculate scaling factor dynamically (based on top position of slider)
     let imageScalingFactor;
     let imagePanelHeight = parseInt($("#layout_layout_resizer_top").css("top"), 10);
@@ -2466,7 +2477,7 @@ calculateProjectedBoundingBox = (xPos, yPos, zPos, width, length, height, channe
         let point2D;
         if (this.state.currentDataset === this.state.datasets.NuScenes) {
             projectionMatrix = this.props.camChannels[idx].projectionMatrixNuScenes;
-            point2D = matrixProduct3x4(projectionMatrix, point3D);
+            point2D = this.props.matrixProduct3x4(projectionMatrix, point3D);
         }
 
         if (point2D[2] > 0) {
@@ -2571,9 +2582,9 @@ readPointCloud = () => {
     let rawFile = new XMLHttpRequest();
     try {
         if (this.state.showOriginalNuScenesLabels === true) {
-            rawFile.open("GET", 'input/' + this.state.currentDataset + '/pointclouds/' + pad(this.state.currentFileIndex, 6) + '.pcd', false);
+            rawFile.open("GET", 'input/' + this.state.currentDataset + '/pointclouds/' + this.props.pad(this.state.currentFileIndex, 6) + '.pcd', false);
         } else {
-            rawFile.open("GET", 'input/' + this.state.currentDataset + '/' + this.state.currentSequence + '/pointclouds/' + pad(this.state.currentFileIndex, 6) + '.pcd', false);
+            rawFile.open("GET", 'input/' + this.state.currentDataset + '/' + this.state.currentSequence + '/pointclouds/' + this.props.pad(this.state.currentFileIndex, 6) + '.pcd', false);
         }
     } catch (error) {
         // no labels available for this camera image
@@ -2616,7 +2627,9 @@ readPointCloud = () => {
 
 projectPoints = (points3D, channelIdx) => {
     let points2D = [];
-    currentPoints3D = [];
+    const currentPoints3D = this.state.currentPoints3D;
+
+    // currentPoints3D = [];
 
     const currentDistances = this.state.currentDistances;
     // currentDistances = [];
@@ -2630,7 +2643,7 @@ projectPoints = (points3D, channelIdx) => {
 
     for (let i = 0; i < points3D.length; i++) {
         let point3D = points3D[i];
-        let point2D = matrixProduct3x4(projectionMatrix, point3D);
+        let point2D = this.props.matrixProduct3x4(projectionMatrix, point3D);
         if (point2D[2] > 0) {
             // use only points that are in front of the camera
             let windowX = point2D[0] / point2D[2];
@@ -2672,11 +2685,12 @@ showProjectedPoints = () => {
     let points3D = this.readPointCloud();
     const currentDistances = this.state.currentDistances;
     const circleArray = this.state.circleArray;
+    const colorMap = this.state.colorMap;
     // circleArray
     for (let channelIdx = 0; channelIdx < this.props.camChannels.length; channelIdx++) {
-        let paper = paperArrayAll[this.state.currentFileIndex][channelIdx];
-        let points2D = projectPoints(points3D, channelIdx);
-        normalizeDistances();
+        let paper = this.props.paperArrayAll[this.state.currentFileIndex][channelIdx];
+        let points2D = this.projectPoints(points3D, channelIdx);
+        this.normalizeDistances();
         for (let i = 0; i < points2D.length; i++) {
             let pt2D = points2D[i];
             let circle = paper.circle(pt2D.x, pt2D.y, 1);
@@ -2701,8 +2715,9 @@ hideProjectedPoints = () => {
 
 loadColorMap = () => {
     let rawFile = new XMLHttpRequest();
+    const colorMap = this.state.colorMap;
     try {
-        rawFile.open("GET", 'assets/colormaps/' + activeColorMap, false);
+        rawFile.open("GET", 'assets/colormaps/' + this.state.activeColorMap, false);
     } catch (error) {
     }
 
@@ -2813,7 +2828,7 @@ scatter = (vertices, size, color, texture = "") => {
         settings["map"] = new THREE.TextureLoader().load(texture);
     }
     geometry.addAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    material = new THREE.PointsMaterial(settings);
+    const material = new THREE.PointsMaterial(settings);
     material.color.set(color);
     return new THREE.Points(geometry, material);
 }
@@ -2835,6 +2850,8 @@ updateBEV = (xPos, yPos, zPos) => {
 initBev = () => {
     const canvasBEV = document.createElement("canvas");
     const headerHeight = this.state.headerHeight;
+    const scene = this.state.scene;
+
     canvasBEV.id = "canvasBev";
     let wBev = window.innerWidth / 3;
     canvasBEV.width = wBev;
@@ -2866,6 +2883,7 @@ showBEV = (xPos, yPos, zPos) => {
 
 initFrontView = () => {
   const scene = this.state.scene;
+  const headerHeight = this.state.headerHeight;
 
     const canvasFrontView = document.createElement("canvas");
     canvasFrontView.id = "canvasFrontView";
@@ -2882,7 +2900,7 @@ initFrontView = () => {
 
     $("body").append(canvasFrontView);
     $("#canvasFrontView").css("top", headerHeight + imagePanelTopPos + heightFrontView);
-    cameraFrontView = new THREE.OrthographicCamera(window.innerWidth / -4, window.innerWidth / 4, window.innerHeight / 4, window.innerHeight / -4, -5000, 10000);
+    const cameraFrontView = new THREE.OrthographicCamera(window.innerWidth / -4, window.innerWidth / 4, window.innerHeight / 4, window.innerHeight / -4, -5000, 10000);
     cameraFrontView.lookAt(new THREE.Vector3(0, 0, -1));
     scene.add(cameraFrontView);
 }
@@ -3002,6 +3020,7 @@ enableInterpolationModeCheckbox = (interpolationModeCheckbox) => {
 }
 
 enableInterpolationBtn = () =>{
+  const interpolateBtn = this.state.interpolateBtn;
 
     interpolateBtn.domElement.parentElement.parentElement.style.pointerEvents = "all";
     interpolateBtn.domElement.parentElement.parentElement.style.opacity = 1.0;
@@ -3025,8 +3044,8 @@ mouseUpLogic = (ev) => {
   const clickedObjectIndex = this.state.clickedObjectIndex;
   const mouseUp = this.state.mouseUp;
   const clickedPlaneArray = this.state.clickedPlaneArray;
-  const groundPlaneArray = this.state.groundPlaneArray;
-
+  const groundPlaneArray = this.state.groundPlaneArray; 
+  const clickFlag = this.state.clickFlag;
 
 
     dragControls = false;
@@ -3271,7 +3290,7 @@ mouseUpLogic = (ev) => {
 
                 // average car height in meters (ref: https://www.carfinderservice.com/car-advice/a-careful-look-at-different-sedan-dimensions)
                 let defaultHeight = 1.468628;
-                let addBboxParameters = getDefaultObject();
+                let addBboxParameters = this.props.getDefaultObject();
                 addBboxParameters.class = classesBoundingBox.targetName();
                 addBboxParameters.x = xPos;
                 addBboxParameters.y = yPos;
@@ -3309,7 +3328,7 @@ mouseUpLogic = (ev) => {
                 // set channel
                 for (let i = 0; i < this.props.camChannels.length; i++) {
                     let channel = this.props.camChannels[i].channel;
-                    let projectedBoundingBox = calculateProjectedBoundingBox(xPos, yPos, addBboxParameters.z, addBboxParameters.width, addBboxParameters.length, addBboxParameters.height, channel, addBboxParameters.rotationY);
+                    let projectedBoundingBox = this.calculateProjectedBoundingBox(xPos, yPos, addBboxParameters.z, addBboxParameters.width, addBboxParameters.length, addBboxParameters.height, channel, addBboxParameters.rotationY);
                     addBboxParameters.channels[i].projectedPoints = projectedBoundingBox;
                 }
                 // calculate line segments
@@ -3318,7 +3337,7 @@ mouseUpLogic = (ev) => {
                     if (channelObj.channel !== undefined && channelObj.channel !== '') {
                         if (addBboxParameters.channels[i].projectedPoints !== undefined && addBboxParameters.channels[i].projectedPoints.length === 8) {
                             let horizontal = addBboxParameters.width > addBboxParameters.length;
-                            addBboxParameters.channels[i]["lines"] = calculateAndDrawLineSegments(channelObj, classesBoundingBox.targetName(), horizontal, true);
+                            addBboxParameters.channels[i]["lines"] = this.calculateAndDrawLineSegments(channelObj, classesBoundingBox.targetName(), horizontal, true);
                         }
                     }
                 }
@@ -3329,7 +3348,7 @@ mouseUpLogic = (ev) => {
                 } else {
                   this.props.removeObject("transformControls");
                 }
-                $("#tooltip-" + this.props.contents[this.state.currentFileIndex][insertIndex]["class"].charAt(0) + annotationObjects.contents[this.state.currentFileIndex][insertIndex]["trackId"]).hide();
+                $("#tooltip-" + this.props.contents[this.state.currentFileIndex][insertIndex]["class"].charAt(0) + this.props.contents[this.state.currentFileIndex][insertIndex]["trackId"]).hide();
                 // move left button to right
                 $("#left-btn").css("left", window.innerWidth / 3 - 70);
                 this.showHelperViews(xPos, yPos, zPos);
@@ -3381,7 +3400,7 @@ mouseDownLogic = (ev) => {
   const currentCamera = this.state.currentCamera;
   const clickedPlaneArray = this.state.clickedPlaneArray;
   const groundPlaneArray = this.state.groundPlaneArray;
-
+  const clickFlag = this.state.clickFlag;
 
     let rect = ev.target.getBoundingClientRect();
     mouseDown.x = ((ev.clientX - rect.left) / window.innerWidth) * 2 - 1;
@@ -3415,7 +3434,7 @@ mouseDownLogic = (ev) => {
               clickedPoint: clickedPoint
             })
             // clickedCube = this.props.cubeArray[this.state.currentFileIndex][clickedObjectIndex_];
-            clickedCube = this.props.cubeArray[this.state.currentFileIndex][this.state.clickedObjectIndex];
+            const clickedCube = this.props.cubeArray[this.state.currentFileIndex][this.state.clickedObjectIndex];
 
             if (birdsEyeViewFlag === true) {
                 let material = new THREE.MeshBasicMaterial({
@@ -3509,7 +3528,7 @@ handleMouseDown = (ev) => {
 }
 
 isFullscreen = () => {
-    return Math.round(window.innerHeight * window.devicePixelRatio) === screen.height;
+    return Math.round(window.innerHeight * window.devicePixelRatio) === window.screen.height;
 }
 
 initViews = () => {
@@ -3520,7 +3539,7 @@ initViews = () => {
     if (this.isFullscreen() === true) {
         viewHeight = Math.round((window.innerHeight - headerHeight - imagePanelTopPos) / 3);
     } else {
-        viewHeight = Math.round((screen.height + 24 - headerHeight - imagePanelTopPos) / 3) - 40;
+        viewHeight = Math.round((window.screen.height + 24 - headerHeight - imagePanelTopPos) / 3) - 40;
     }
 
     const views = [
@@ -3625,6 +3644,8 @@ enableCopyLabelToNextFrameCheckbox = (copyLabelToNextFrameCheckbox) => {
 }
 
 disableInterpolationBtn = () => {
+  const interpolateBtn = this.state.interpolateBtn;
+
     interpolateBtn.domElement.parentElement.parentElement.style.pointerEvents = "none";
     interpolateBtn.domElement.parentElement.parentElement.style.opacity = 0.2;
 }
@@ -3655,6 +3676,8 @@ disableChooseSequenceDropDown = (chooseSequenceDropDown) => {
 
 createGrid = () => {
   const scene = this.state.scene;
+  const showGridFlag = this.state.showGridFlag;
+
   this.props.removeObject("grid");
     const grid = new THREE.GridHelper(100, 100);
 
@@ -3788,7 +3811,7 @@ loadDetectedBoxes = () => {
                     if (line === "") {
                         continue;
                     }
-                    let params = this.getDefaultObject();
+                    let params = this.props.getDefaultObject();
                     let attributes = line.split(",");
                     frameNumber = parseFloat(attributes[0].trim().split(" ")[1]);
                     if (frameNumber === frameNumberPrevious) {
@@ -3919,8 +3942,8 @@ init = () => {
     const interpolationMode = this.state.interpolationMode;
     const guiAnnotationClasses = this.state.guiAnnotationClasses;
     const parametersBoundingBox = this.state.parametersBoundingBox;
-    const guiOptions = this.state.guiOptions;
-    const guiOptionsOpened = this.state.guiOptionsOpened;
+    // const guiOptions = this.state.guiOptions;
+    // const guiOptionsOpened = this.state.guiOptionsOpened;
     const showProjectedPointsFlag = this.state.showProjectedPointsFlag;
     const filterGround = this.state.filterGround;
     const guiBoundingBoxAnnotationMap = this.state.guiBoundingBoxAnnotationMap;
@@ -4020,240 +4043,244 @@ init = () => {
         };
         guiAnnotationClasses.domElement.id = 'class-picker';
         // 3D BB controls
-        guiOptions.add(parameters, 'download').name("Download Annotations");
-        guiOptions.add(parameters, 'download_video').name("Download Video");
-        guiOptions.add(parameters, 'undo').name("Undo");
-        guiOptions.add(parameters, 'switch_view').name("Switch view");
-        let showOriginalNuScenesLabelsCheckbox = guiOptions.add(parameters, 'show_nuscenes_labels').name('NuScenes Labels').listen();
-        showOriginalNuScenesLabelsCheckbox.onChange(function (value) {
-            this.state.showOriginalNuScenesLabels = value;
-            if (this.state.showOriginalNuScenesLabels === true) {
-                // TODO: improve:
-                // - do not reset
-                // - show current labels and in addition nuscenes labels
-                this.props.reset();
-                this.props.start();
-            } else {
-                // TODO: hide nuscenes labels (do not reset)
-                this.props.reset();
-                this.props.start();
-            }
-        });
+        // 임시주석 처리
+        // guiOptions.add(parameters, 'download').name("Download Annotations");
+        // guiOptions.add(parameters, 'download_video').name("Download Video");
+        // guiOptions.add(parameters, 'undo').name("Undo");
+        // guiOptions.add(parameters, 'switch_view').name("Switch view");
+        // let showOriginalNuScenesLabelsCheckbox = guiOptions.add(parameters, 'show_nuscenes_labels').name('NuScenes Labels').listen();
+        // showOriginalNuScenesLabelsCheckbox.onChange(function (value) {
+        //     this.state.showOriginalNuScenesLabels = value;
+        //     if (this.state.showOriginalNuScenesLabels === true) {
+        //         // TODO: improve:
+        //         // - do not reset
+        //         // - show current labels and in addition nuscenes labels
+        //         this.props.reset();
+        //         this.props.start();
+        //     } else {
+        //         // TODO: hide nuscenes labels (do not reset)
+        //         this.props.reset();
+        //         this.props.start();
+        //     }
+        // });
         let allCheckboxes = $(":checkbox");
         let showNuScenesLabelsCheckbox = allCheckboxes[0];
         if (this.state.currentDataset === this.state.datasets.NuScenes) {
           this.enableShowNuscenesLabelsCheckbox(showNuScenesLabelsCheckbox);
         }
         let chooseSequenceDropDown;
-        guiOptions.add(parameters, 'datasets', ['NuScenes']).name("Choose dataset")
-            .onChange(function (value) {
-              this.changeDataset(value);
-                let allCheckboxes = $(":checkbox");
-                let showNuScenesLabelsCheckbox = allCheckboxes[0];
-                if (value === this.state.datasets.NuScenes) {
-                  this.enableShowNuscenesLabelsCheckbox(showNuScenesLabelsCheckbox);
-                  this.disableChooseSequenceDropDown(chooseSequenceDropDown.domElement);
-                }
-                this.hideMasterView();
-            });
-        chooseSequenceDropDown = guiOptions.add(parameters, 'sequences', [
-          this.props.sequencesNuScenes[0]]).name("Choose Sequence")
-            .onChange(function (value) {
-              this.changeSequence(value);
-              this.hideMasterView();
-            });
+        // guiOptions.add(parameters, 'datasets', ['NuScenes']).name("Choose dataset")
+        //     .onChange(function (value) {
+        //       this.changeDataset(value);
+        //         let allCheckboxes = $(":checkbox");
+        //         let showNuScenesLabelsCheckbox = allCheckboxes[0];
+        //         if (value === this.state.datasets.NuScenes) {
+        //           this.enableShowNuscenesLabelsCheckbox(showNuScenesLabelsCheckbox);
+        //           this.disableChooseSequenceDropDown(chooseSequenceDropDown.domElement);
+        //         }
+        //         this.hideMasterView();
+        //     });
+        // chooseSequenceDropDown = guiOptions.add(parameters, 'sequences', [
+        //   this.props.sequencesNuScenes[0]]).name("Choose Sequence")
+        //     .onChange(function (value) {
+        //       this.changeSequence(value);
+        //       this.hideMasterView();
+        //     });
 
-        let showFieldOfViewCheckbox = guiOptions.add(parameters, 'show_field_of_view').name('Field-Of-View').listen();
-        showFieldOfViewCheckbox.onChange(function (value) {
-          this.props.showFieldOfView = value;
-            if (this.props.showFieldOfView === true) {
-              this.props.removeObject('rightplane');
-              this.props.removeObject('leftplane');
-              this.props.removeObject('prism');
-              this.props.drawFieldOfView();
-            } else {
-              this.props.removeObject('rightplane');
-              this.props.removeObject('leftplane');
-              this.props.removeObject('prism');
-            }
-        });
-        let showProjectedPointsCheckbox = guiOptions.add(parameters, 'show_projected_points').name('Show projected points').listen();
-        showProjectedPointsCheckbox.onChange(function (value) {
-            showProjectedPointsFlag = value;
-            if (showProjectedPointsFlag === true) {
-              this.showProjectedPoints();
-            } else {
-              this.hideProjectedPoints();
-            }
-        });
-        let showGridCheckbox = guiOptions.add(parameters, 'show_grid').name('Show grid').listen();
-        showGridCheckbox.onChange(function (value) {
-            showGridFlag = value;
-            //let grid = scene.getObjectByName("grid");
-            if (grid === undefined || grid.parent === null) {
-              this.createGrid();
-            }
-            if (showGridFlag === true) {
-                grid.visible = true;
-            } else {
-                grid.visible = false;
-            }
-        });
-        let filterGroundCheckbox = guiOptions.add(parameters, 'filter_ground').name('Filter ground').listen();
-        filterGroundCheckbox.onChange(function (value) {
-            filterGround = value;
-            if (filterGround === true) {
-              this.props.removeObject("pointcloud-scan-" + this.state.currentFileIndex);
-                this.addObject(pointCloudScanNoGroundList[this.state.currentFileIndex], "pointcloud-scan-no-ground-" + this.state.currentFileIndex);
-            } else {
-              this.props.removeObject("pointcloud-scan-no-ground-" + this.state.currentFileIndex);
-                this.addObject(pointCloudScanList[this.state.currentFileIndex], "pointcloud-scan-" + this.state.currentFileIndex);
-            }
-        });
+        // let showFieldOfViewCheckbox = guiOptions.add(parameters, 'show_field_of_view').name('Field-Of-View').listen();
+        // showFieldOfViewCheckbox.onChange(function (value) {
+        //   this.props.showFieldOfView = value;
+        //     if (this.props.showFieldOfView === true) {
+        //       this.props.removeObject('rightplane');
+        //       this.props.removeObject('leftplane');
+        //       this.props.removeObject('prism');
+        //       this.props.drawFieldOfView();
+        //     } else {
+        //       this.props.removeObject('rightplane');
+        //       this.props.removeObject('leftplane');
+        //       this.props.removeObject('prism');
+        //     }
+        // });
+        // let showProjectedPointsCheckbox = guiOptions.add(parameters, 'show_projected_points').name('Show projected points').listen();
+        // showProjectedPointsCheckbox.onChange(function (value) {
+        //     showProjectedPointsFlag = value;
+        //     if (showProjectedPointsFlag === true) {
+        //       this.showProjectedPoints();
+        //     } else {
+        //       this.hideProjectedPoints();
+        //     }
+        // });
+        // let showGridCheckbox = guiOptions.add(parameters, 'show_grid').name('Show grid').listen();
+        // showGridCheckbox.onChange(function (value) {
+        //     this.setState({
+        //       showGridFlag: value
+        //     })
+        //     // showGridFlag = value;
+        //     //let grid = scene.getObjectByName("grid");
+        //     if (grid === undefined || grid.parent === null) {
+        //       this.createGrid();
+        //     }
+        //     if (this.state.showGridFlag === true) {
+        //         grid.visible = true;
+        //     } else {
+        //         grid.visible = false;
+        //     }
+        // });
+        // let filterGroundCheckbox = guiOptions.add(parameters, 'filter_ground').name('Filter ground').listen();
+        // filterGroundCheckbox.onChange(function (value) {
+        //     filterGround = value;
+        //     if (filterGround === true) {
+        //       this.props.removeObject("pointcloud-scan-" + this.state.currentFileIndex);
+        //         this.addObject(pointCloudScanNoGroundList[this.state.currentFileIndex], "pointcloud-scan-no-ground-" + this.state.currentFileIndex);
+        //     } else {
+        //       this.props.removeObject("pointcloud-scan-no-ground-" + this.state.currentFileIndex);
+        //         this.addObject(pointCloudScanList[this.state.currentFileIndex], "pointcloud-scan-" + this.state.currentFileIndex);
+        //     }
+        // });
 
-        let hideOtherAnnotationsCheckbox = guiOptions.add(parameters, 'hide_other_annotations').name('Hide other annotations').listen();
-        const hideOtherAnnotations = this.state.hideOtherAnnotations;
-        hideOtherAnnotationsCheckbox.onChange(function (value) {
+        // let hideOtherAnnotationsCheckbox = guiOptions.add(parameters, 'hide_other_annotations').name('Hide other annotations').listen();
+        // const hideOtherAnnotations = this.state.hideOtherAnnotations;
+        // hideOtherAnnotationsCheckbox.onChange(function (value) {
 
-            this.setState({
-              hideOtherAnnotations: value
-            })
-            // hideOtherAnnotations = value;
-            let selectionIndex = this.props.getSelectionIndex();
-            if (this.state.hideOtherAnnotations === true) {
-                for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
-                    // remove 3D labels
-                    let mesh = this.props.cubeArray[this.state.currentFileIndex][i];
-                    mesh.material.opacity = 0;
-                    // remove all 2D labels
-                    for (let j = 0; j < this.props.contents[this.state.currentFileIndex][i].channels.length; j++) {
-                        let channelObj = this.props.contents[this.state.currentFileIndex][i].channels[j];
-                        // remove drawn lines of all 6 channels
-                        for (let lineObj in channelObj.lines) {
-                            if (channelObj.lines.hasOwnProperty(lineObj)) {
-                                let line = channelObj.lines[lineObj];
-                                if (line !== undefined) {
-                                    line.remove();
-                                }
-                            }
-                        }
-                    }
-                }
-                if (selectionIndex !== -1) {
-                    // draw selected object in 2D and 3D
-                    this.update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
-                }
-            } else {
-                for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
-                    // show 3D labels
-                    let mesh = this.props.cubeArray[this.state.currentFileIndex][i];
-                    mesh.material.opacity = 0.9;
-                    // show 2D labels
-                    if (selectionIndex === i) {
-                        // draw selected object in 2D and 3D
-                        this.update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
-                    } else {
-                        if (selectionIndex !== -1) {
-                          this.update2DBoundingBox(this.state.currentFileIndex, i, false);
-                        }
-                    }
+        //     this.setState({
+        //       hideOtherAnnotations: value
+        //     })
+        //     // hideOtherAnnotations = value;
+        //     let selectionIndex = this.props.getSelectionIndex();
+        //     if (this.state.hideOtherAnnotations === true) {
+        //         for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+        //             // remove 3D labels
+        //             let mesh = this.props.cubeArray[this.state.currentFileIndex][i];
+        //             mesh.material.opacity = 0;
+        //             // remove all 2D labels
+        //             for (let j = 0; j < this.props.contents[this.state.currentFileIndex][i].channels.length; j++) {
+        //                 let channelObj = this.props.contents[this.state.currentFileIndex][i].channels[j];
+        //                 // remove drawn lines of all 6 channels
+        //                 for (let lineObj in channelObj.lines) {
+        //                     if (channelObj.lines.hasOwnProperty(lineObj)) {
+        //                         let line = channelObj.lines[lineObj];
+        //                         if (line !== undefined) {
+        //                             line.remove();
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //         if (selectionIndex !== -1) {
+        //             // draw selected object in 2D and 3D
+        //             this.update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
+        //         }
+        //     } else {
+        //         for (let i = 0; i < this.props.contents[this.state.currentFileIndex].length; i++) {
+        //             // show 3D labels
+        //             let mesh = this.props.cubeArray[this.state.currentFileIndex][i];
+        //             mesh.material.opacity = 0.9;
+        //             // show 2D labels
+        //             if (selectionIndex === i) {
+        //                 // draw selected object in 2D and 3D
+        //                 this.update2DBoundingBox(this.state.currentFileIndex, selectionIndex, true);
+        //             } else {
+        //                 if (selectionIndex !== -1) {
+        //                   this.update2DBoundingBox(this.state.currentFileIndex, i, false);
+        //                 }
+        //             }
 
-                }
-            }
+        //         }
+        //     }
 
-        });
+        // });
 
-        guiOptions.add(parameters, 'select_all_copy_label_to_next_frame').name("Select all 'Copy label to next frame'");
-        guiOptions.add(parameters, 'unselect_all_copy_label_to_next_frame').name("Unselect all 'Copy label to next frame'");
-
-
-        let interpolationModeCheckbox = guiOptions.add(parameters, 'interpolation_mode').name('Interpolation Mode');
-        interpolationModeCheckbox.domElement.id = 'interpolation-checkbox';
-        // if scene contains no objects then deactivate checkbox
-        // ajax_wrapper.js에 있음
-        if (this.props.annotationFileExist(undefined, undefined) === false || interpolationMode === false) {
-            // no annotation file exist -> deactivate checkbox
-            this.disableInterpolationModeCheckbox(interpolationModeCheckbox.domElement);
-        }
-
-        interpolationModeCheckbox.onChange(function (value) {
-            interpolationMode = value;
-            if (interpolationMode === true) {
-                interpolationObjIndexCurrentFile = this.props.getSelectionIndex();
-                if (interpolationObjIndexCurrentFile !== -1) {
-                    // set interpolation start position
-                    let obj = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile];
-                    obj["interpolationStart"]["position"]["x"] = obj["x"];
-                    obj["interpolationStart"]["position"]["y"] = obj["y"];
-                    obj["interpolationStart"]["position"]["z"] = obj["z"];
-                    obj["interpolationStart"]["position"]["rotationY"] = obj["rotationY"];
-                    obj["interpolationStart"]["size"]["width"] = obj["width"];
-                    obj["interpolationStart"]["size"]["length"] = obj["length"];
-                    obj["interpolationStart"]["size"]["height"] = obj["height"];
-                    // short interpolation start index (Interpolation Start Position (frame 400)
-                    folderPositionArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Position (frame " + (this.state.currentFileIndex + 1) + ")";
-                    folderSizeArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Size (frame " + (this.state.currentFileIndex + 1) + ")";
-                    // set start index
-                    this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"] = this.state.currentFileIndex;
-                }
-                // check 'copy label to next frame' of selected object
-                this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["copyLabelToNextFrame"] = true;
-                let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + interpolationObjIndexCurrentFile);
-                checkboxElem.firstChild.checked = true;
-                // disable checkbox
-                this.disableCopyLabelToNextFrameCheckbox(checkboxElem);
-            } else {
-              this.disableInterpolationBtn();
-                if (interpolationObjIndexCurrentFile !== -1) {
-                    folderPositionArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Position";
-                    folderSizeArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Size";
-                    this.enableStartPositionAndSize();
-                    //[1].__folders[""Interpolation End Position (frame 1)""]
-                    for (let i = 0; i < folderBoundingBox3DArray.length; i++) {
-                        // get all keys of folders object
-                        let keys = Object.keys(folderBoundingBox3DArray[i].__folders);
-                        for (let j = 0; j < keys.length; j++) {
-                            if (keys[j].startsWith("Interpolation End")) {
-                                folderBoundingBox3DArray[i].removeFolder(keys[j]);
-                            }
-                        }
-                    }
-                    // folderBoundingBox3DArray[interpolationObjIndexCurrentFile].removeFolder("Interpolation End Position (frame " + (labelTool.previousFileIndex + 1) + ")");
-                    // folderBoundingBox3DArray[interpolationObjIndexCurrentFile].removeFolder("Interpolation End Size (frame " + (labelTool.previousFileIndex + 1) + ")");
-                    // enable checkbox
-                    let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + interpolationObjIndexCurrentFile);
-                    this.enableCopyLabelToNextFrameCheckbox(checkboxElem);
-                }
-                interpolationObjIndexCurrentFile = -1;
-
-            }
-        });
-        interpolateBtn = guiOptions.add(parameters, 'interpolate').name("Interpolate");
-        interpolateBtn.domElement.id = 'interpolate-btn';
-        this.disableInterpolationBtn();
-
-        guiOptions.add(parameters, 'reset_all').name("Reset all");
-        guiOptions.add(parameters, 'skip_frames').name("Skip frames").onChange(function (value) {
-            if (value === "") {
-                value = 1;
-            } else {
-                value = parseInt(value);
-            }
-            this.props.skipFrameCount = value;
-        });
+        // guiOptions.add(parameters, 'select_all_copy_label_to_next_frame').name("Select all 'Copy label to next frame'");
+        // guiOptions.add(parameters, 'unselect_all_copy_label_to_next_frame').name("Unselect all 'Copy label to next frame'");
 
 
-        guiOptions.domElement.id = 'bounding-box-3d-menu';
-        // add download Annotations button
-        let downloadAnnotationsItem = $($('#bounding-box-3d-menu ul li')[0]);
-        let downloadAnnotationsDivItem = downloadAnnotationsItem.children().first();
-        downloadAnnotationsDivItem.wrap("<a href=\"\"></a>");
-        this.loadColorMap();
-        if (showProjectedPointsFlag === true) {
-          this.showProjectedPoints();
-        } else {
-          this.hideProjectedPoints();
-        }
+        // let interpolationModeCheckbox = guiOptions.add(parameters, 'interpolation_mode').name('Interpolation Mode');
+        // interpolationModeCheckbox.domElement.id = 'interpolation-checkbox';
+        // // if scene contains no objects then deactivate checkbox
+        // // ajax_wrapper.js에 있음
+        // if (this.props.annotationFileExist(undefined, undefined) === false || interpolationMode === false) {
+        //     // no annotation file exist -> deactivate checkbox
+        //     this.disableInterpolationModeCheckbox(interpolationModeCheckbox.domElement);
+        // }
+
+        // interpolationModeCheckbox.onChange(function (value) {
+        //     interpolationMode = value;
+        //     if (interpolationMode === true) {
+        //         interpolationObjIndexCurrentFile = this.props.getSelectionIndex();
+        //         if (interpolationObjIndexCurrentFile !== -1) {
+        //             // set interpolation start position
+        //             let obj = this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile];
+        //             obj["interpolationStart"]["position"]["x"] = obj["x"];
+        //             obj["interpolationStart"]["position"]["y"] = obj["y"];
+        //             obj["interpolationStart"]["position"]["z"] = obj["z"];
+        //             obj["interpolationStart"]["position"]["rotationY"] = obj["rotationY"];
+        //             obj["interpolationStart"]["size"]["width"] = obj["width"];
+        //             obj["interpolationStart"]["size"]["length"] = obj["length"];
+        //             obj["interpolationStart"]["size"]["height"] = obj["height"];
+        //             // short interpolation start index (Interpolation Start Position (frame 400)
+        //             folderPositionArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Position (frame " + (this.state.currentFileIndex + 1) + ")";
+        //             folderSizeArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Size (frame " + (this.state.currentFileIndex + 1) + ")";
+        //             // set start index
+        //             this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"] = this.state.currentFileIndex;
+        //         }
+        //         // check 'copy label to next frame' of selected object
+        //         this.props.contents[this.state.currentFileIndex][interpolationObjIndexCurrentFile]["copyLabelToNextFrame"] = true;
+        //         let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + interpolationObjIndexCurrentFile);
+        //         checkboxElem.firstChild.checked = true;
+        //         // disable checkbox
+        //         this.disableCopyLabelToNextFrameCheckbox(checkboxElem);
+        //     } else {
+        //       this.disableInterpolationBtn();
+        //         if (interpolationObjIndexCurrentFile !== -1) {
+        //             folderPositionArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Position";
+        //             folderSizeArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Size";
+        //             this.enableStartPositionAndSize();
+        //             //[1].__folders[""Interpolation End Position (frame 1)""]
+        //             for (let i = 0; i < folderBoundingBox3DArray.length; i++) {
+        //                 // get all keys of folders object
+        //                 let keys = Object.keys(folderBoundingBox3DArray[i].__folders);
+        //                 for (let j = 0; j < keys.length; j++) {
+        //                     if (keys[j].startsWith("Interpolation End")) {
+        //                         folderBoundingBox3DArray[i].removeFolder(keys[j]);
+        //                     }
+        //                 }
+        //             }
+        //             // folderBoundingBox3DArray[interpolationObjIndexCurrentFile].removeFolder("Interpolation End Position (frame " + (labelTool.previousFileIndex + 1) + ")");
+        //             // folderBoundingBox3DArray[interpolationObjIndexCurrentFile].removeFolder("Interpolation End Size (frame " + (labelTool.previousFileIndex + 1) + ")");
+        //             // enable checkbox
+        //             let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + interpolationObjIndexCurrentFile);
+        //             this.enableCopyLabelToNextFrameCheckbox(checkboxElem);
+        //         }
+        //         interpolationObjIndexCurrentFile = -1;
+
+        //     }
+        // });
+        // interpolateBtn = guiOptions.add(parameters, 'interpolate').name("Interpolate");
+        // interpolateBtn.domElement.id = 'interpolate-btn';
+        // this.disableInterpolationBtn();
+
+        // guiOptions.add(parameters, 'reset_all').name("Reset all");
+        // guiOptions.add(parameters, 'skip_frames').name("Skip frames").onChange(function (value) {
+        //     if (value === "") {
+        //         value = 1;
+        //     } else {
+        //         value = parseInt(value);
+        //     }
+        //     this.props.skipFrameCount = value;
+        // });
+
+
+        // guiOptions.domElement.id = 'bounding-box-3d-menu';
+        // // add download Annotations button
+        // let downloadAnnotationsItem = $($('#bounding-box-3d-menu ul li')[0]);
+        // let downloadAnnotationsDivItem = downloadAnnotationsItem.children().first();
+        // downloadAnnotationsDivItem.wrap("<a href=\"\"></a>");
+        // this.loadColorMap();
+        // if (showProjectedPointsFlag === true) {
+        //   this.showProjectedPoints();
+        // } else {
+        //   this.hideProjectedPoints();
+        // }
     }
     let classPickerElem = $('#class-picker ul li');
     classPickerElem.css('background-color', '#353535');
@@ -4263,16 +4290,17 @@ init = () => {
 
     $('#bounding-box-3d-menu').css('width', '480px');
     $('#bounding-box-3d-menu ul li').css('background-color', '#353535');
-    $("#bounding-box-3d-menu .close-button").click(function () {
-        guiOptionsOpened = !guiOptionsOpened;
-        if (guiOptionsOpened === true) {
-            $("#right-btn").css("right", 430);
-        } else {
-            $("#right-btn").css("right", -50);
-        }
-    });
+    // 임시주석 처리 gui부분
+    // $("#bounding-box-3d-menu .close-button").click(function () {
+    //     guiOptionsOpened = !guiOptionsOpened;
+    //     if (guiOptionsOpened === true) {
+    //         $("#right-btn").css("right", 430);
+    //     } else {
+    //         $("#right-btn").css("right", -50);
+    //     }
+    // });
 
-    guiOptions.open();
+    // guiOptions.open();
     classPickerElem.each(function (i, item) {
         let propNamesArray = Object.getOwnPropertyNames(classesBoundingBox);
         let color = classesBoundingBox[propNamesArray[i]].color;
@@ -4292,11 +4320,20 @@ init = () => {
 render(){
   return(
     <boundingBox 
-      get3DLabel = {()=>this.get3DLabel}
+      get3DLabel = {()=>this.get3DLabel()}
     />,
     <classesBoundingBox 
     operationStack = {this.state.operationStack}
+    />,
+    <baseLabelTool 
+      getObjectIndexByTrackIdAndClass = {()=>this.getObjectIndexByTrackIdAndClass}
+      interpolationMode={this.state.interpolationMode}
+      initViews={()=>this.initViews}
+      headerHeight={this.state.headerHeight}
+      interpolateBtn={this.state.interpolateBtn}
+      addBoundingBoxGui={()=>this.addBoundingBoxGui}
     />
+    
   )
 }
 }
