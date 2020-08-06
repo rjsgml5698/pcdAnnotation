@@ -1,7 +1,7 @@
 import React, { Component } from "react";
-import baseBabelTools from "./base_label_tool.js";
-import boundingBox from './boundingbox.js';
-import imageLabelTools from './image_label_tool';
+import BasebabelTools from "./base_label_tool.js";
+import BoundingBox from './boundingbox.js';
+import ImagelabelTools from './image_label_tool';
 
 export default class ClassBoundingBox extends Component {
 
@@ -125,10 +125,10 @@ export default class ClassBoundingBox extends Component {
 
   render(){
     return(
-      <boundingBox
+      <BoundingBox
         BoundingBoxClassify={this.state.classesBoundingBox}
       />,
-      <baseBabelTools 
+      <BasebabelTools  
         BoundingBoxClassify={this.state.classesBoundingBox}
         addNuSceneLabel={()=>this.addNuSceneLabel}
         target={()=>this.target}
@@ -139,7 +139,7 @@ export default class ClassBoundingBox extends Component {
         getCurrentClass={()=>this.getCurrentClass}
       />,
 
-      <imageLabelTools 
+      <ImagelabelTools
         BoundingBoxClassify={this.state.classesBoundingBox}
       />
     )

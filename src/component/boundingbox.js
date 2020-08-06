@@ -1,8 +1,8 @@
 import React, { Component } from "react";
-import baseBabelTools from './base_label_tool.js';
-import imageLabelTools from './image_label_tool.js';
-import pcdLabelTool from './pcd_label_tool.js';
-import classBoundingBox from './classesBoundingBox.js';
+import BasebabelTools from './base_label_tool.js';
+import ImagelabelTools from './image_label_tool.js';
+import PcdlabelTool from './pcd_label_tool.js';
+import ClassboundingBox from './classesBoundingBox.js';
 import $ from 'jquery';
 window.$ = $;
 
@@ -272,7 +272,7 @@ constructor(props){
   render(){
     return(
 
-      <pcdLabelTool 
+      <PcdlabelTool 
         contents={this.state.contents}
         getSelectionIndex={()=>this.getSelectionIndex}
         onSelect={()=>this.onSelect}
@@ -280,7 +280,7 @@ constructor(props){
         contents={this.state.contents}
       />,
 
-      <classBoundingBox 
+      <ClassboundingBox 
         __selectionIndexCurrentFrame={this.state.__selectionIndexCurrentFrame}
         contents={this.state.contents}
         getSelectedBoundingBox={()=>this.getSelectedBoundingBox}
@@ -312,7 +312,7 @@ constructor(props){
         __selectionIndexCurrentFrame={this.state.__selectionIndexCurrentFrame}
       />,
 
-      <imageLabelTools 
+      <ImagelabelTools 
         contents={this.state.contents}
         remove={()=>this.remove}
         selectEmpty={()=>this.selectEmpty}

@@ -1,8 +1,8 @@
 import React, { Component } from "react";
-import baseLabelTool from "./base_label_tool";
-import boundingBox from './boundingbox.js';
+import BasebabelTool from "./base_label_tool.js";
+import BoundingBox from './boundingbox.js';
 import * as THREE from 'three';
-import classesBoundingBox from './classesBoundingBox.js';
+import ClassesboundingBox from './classesBoundingBox.js';
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { PCDLoader } from "three/examples/jsm/loaders/PCDLoader";
@@ -12,6 +12,7 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 import { Projector } from "three/examples/jsm/renderers/Projector";
 
 import $ from 'jquery';
+import { ConeBufferGeometry } from "three";
 window.$ = $;
 
 export default class pcdLabelTool extends Component {
@@ -131,27 +132,27 @@ export default class pcdLabelTool extends Component {
       canvas3D : null,
       parametersBoundingBox : {
         "Vehicle": function () {
-            classesBoundingBox.select("Vehicle");
+          ClassesboundingBox.select("Vehicle");
             $('#class-picker ul li').css('background-color', '#323232');
             $($('#class-picker ul li')[0]).css('background-color', '#525252');
         },
         "Truck": function () {
-            classesBoundingBox.select("Truck");
+          ClassesboundingBox.select("Truck");
             $('#class-picker ul li').css('background-color', '#323232');
             $($('#class-picker ul li')[1]).css('background-color', '#525252');
         },
         "Motorcycle": function () {
-            classesBoundingBox.select("Motorcycle");
+          ClassesboundingBox.select("Motorcycle");
             $('#class-picker ul li').css('background-color', '#323232');
             $($('#class-picker ul li')[2]).css('background-color', '#525252');
         },
         "Bicycle": function () {
-            classesBoundingBox.select("Bicycle");
+          ClassesboundingBox.select("Bicycle");
             $('#class-picker ul li').css('background-color', '#323232');
             $($('#class-picker ul li')[3]).css('background-color', '#525252');
         },
         "Pedestrian": function () {
-            classesBoundingBox.select("Pedestrian");
+          ClassesboundingBox.select("Pedestrian");
             $('#class-picker ul li').css('background-color', '#323232');
             $($('#class-picker ul li')[4]).css('background-color', '#525252');
         },
@@ -171,7 +172,8 @@ getObjectIndexByTrackIdAndClass = (trackId, className, fileIdx) => {
 
 // labelTool은 base_babel_tools에 있음
 componentDidMount(){
-  this.props.onInitialize("PCD", function () {
+  console.log("pcd_props", this.props);
+  this.props.onInitialize("PCD",  () => {
     if (!this.Detector.webgl) {
       this.Detector.addGetWebGLMessage();
     }
@@ -179,7 +181,7 @@ componentDidMount(){
     this.animate();
   });
 
-  // this.loadPCDData();
+   this.loadPCDData();
 }
 
 interpolate = () => {
@@ -525,6 +527,7 @@ drawCameraPosition = () => {
 // Visualize 2d and 3d data
 loadPCDData = () => {
     const scene = this.state.scene;
+    console.log("scene###!!!", scene);
     const pointCloudScanNoGroundList = this.state.pointCloudScanNoGroundList;
     const pointCloudScanList = this.state.pointCloudScanList;
     // ASCII pcd files
@@ -647,9 +650,9 @@ loadObjModel = (materialURL, objectURL) => {
 // boundingbox에서 불럼
 // annotationObjects.onChangeClass("PCD", function (index, label) {
 onChangeClass = ("PCD", (index, label) => {
-  this.props.cubeArray[this.state.currentFileIndex][index].material.color.setHex(classesBoundingBox[label].color.replace("#", "0x"));
+  this.props.cubeArray[this.state.currentFileIndex][index].material.color.setHex(ClassesboundingBox[label].color.replace("#", "0x"));
     // change also color of the bounding box
-    this.props.cubeArray[this.state.currentFileIndex][index].children[0].material.color.setHex(classesBoundingBox[label].color.replace("#", "0x"));
+    this.props.cubeArray[this.state.currentFileIndex][index].children[0].material.color.setHex(ClassesboundingBox[label].color.replace("#", "0x"));
     this.props.contents[this.state.currentFileIndex][index]["class"] = label;
 });
 
@@ -812,12 +815,12 @@ get3DLabel = (parameters) => {
     let color;
     if (parameters.fromFile === true) {
         if (this.state.showOriginalNuScenesLabels === true && this.state.currentDataset === this.state.datasets.NuScenes) {
-            color = classesBoundingBox.content[parameters.class].color;
+            color = ClassesboundingBox.content[parameters.class].color;
         } else {
-            color = classesBoundingBox[parameters.class].color;
+            color = ClassesboundingBox[parameters.class].color;
         }
     } else {
-        color = classesBoundingBox.target().color;
+        color = ClassesboundingBox.target().color;
     }
 
     let cubeMaterial = new THREE.MeshBasicMaterial({
@@ -922,16 +925,16 @@ updateXPos = (newFileIndex, value) => {
         if (exist === false) {
             // track id was not used yet
             if (this.state.showOriginalNuScenesLabels === true) {
-                classesBoundingBox.content[label].nextTrackId = newTrackId;
+              ClassesboundingBox.content[label].nextTrackId = newTrackId;
             } else {
-                classesBoundingBox[label].nextTrackId = newTrackId;
+              ClassesboundingBox[label].nextTrackId = newTrackId;
             }
             break;
         }
         if (this.state.showOriginalNuScenesLabels === true) {
-            classesBoundingBox.content[label].nextTrackId = this.props.contents[this.state.currentFileIndex].length + 1;
+          ClassesboundingBox.content[label].nextTrackId = this.props.contents[this.state.currentFileIndex].length + 1;
         } else {
-            classesBoundingBox[label].nextTrackId = this.props.contents[this.state.currentFileIndex].length + 1;
+          ClassesboundingBox[label].nextTrackId = this.props.contents[this.state.currentFileIndex].length + 1;
         }
     }
 }
@@ -1014,11 +1017,11 @@ deleteObject = (bboxClass, trackId, labelIndex) => {
     this.props.selectedMesh = undefined;
     // reduce track id by 1 for this class
     if (this.state.showOriginalNuScenesLabels) {
-        classesBoundingBox.content[bboxClass].nextTrackId--;
+      ClassesboundingBox.content[bboxClass].nextTrackId--;
     } else {
         if (labelIndex === this.props.contents[this.state.currentFileIndex].length) {
             // decrement track id if the last object in the list was deleted
-            classesBoundingBox[bboxClass].nextTrackId--;
+            ClassesboundingBox[bboxClass].nextTrackId--;
         } else {
             // otherwise not last object was deleted -> find out the highest possible track id
             this.setHighestAvailableTrackId(bboxClass);
@@ -2775,7 +2778,7 @@ onDocumentMouseMove = (event) => {
 increaseTrackId = (label, dataset) => {
     let classesBB;
     if (dataset === this.state.datasets.NuScenes) {
-        classesBB = classesBoundingBox.content;
+        classesBB = ClassesboundingBox.content;
     }
 
     // find out the lowest possible track id for a specific class
@@ -3205,7 +3208,7 @@ mouseUpLogic = (ev) => {
             // get index of selected object within 5 classes (using class name)
             let classPickerElem = $('#class-picker ul li');
             classPickerElem.css('background-color', '#353535');
-            $(classPickerElem[classesBoundingBox[obj["class"]].index]).css('background-color', '#525252');
+            $(classPickerElem[ClassesboundingBox[obj["class"]].index]).css('background-color', '#525252');
 
 
         } else {
@@ -3265,11 +3268,11 @@ mouseUpLogic = (ev) => {
 
             let trackId = -1;
             let insertIndex;
-            this.setHighestAvailableTrackId(classesBoundingBox.targetName());
+            this.setHighestAvailableTrackId(ClassesboundingBox.targetName());
             if (this.state.showOriginalNuScenesLabels === true && this.state.currentDataset === this.state.datasets.NuScenes) {
                 if (this.props.__selectionIndexCurrentFrame === -1) {
                     // no object selected in 3d scene (new object was created)-> use selected class from class menu
-                    trackId = classesBoundingBox.content[classesBoundingBox.targetName()].nextTrackId;
+                    trackId = ClassesboundingBox.content[ClassesboundingBox.targetName()].nextTrackId;
                     insertIndex = this.props.contents[this.state.currentFileIndex].length;
                 } else {
                     // object was selected in 3d scene
@@ -3279,7 +3282,7 @@ mouseUpLogic = (ev) => {
                 }
             } else {
                 if (this.props.__selectionIndexCurrentFrame === -1) {
-                    trackId = classesBoundingBox[classesBoundingBox.targetName()].nextTrackId;
+                    trackId = ClassesboundingBox[ClassesboundingBox.targetName()].nextTrackId;
                     insertIndex = this.props.contents[this.state.currentFileIndex].length;
                     clickedObjectIndexPrevious = this.props.contents[this.state.currentFileIndex].length;
                 } else {
@@ -3298,7 +3301,7 @@ mouseUpLogic = (ev) => {
                 // average car height in meters (ref: https://www.carfinderservice.com/car-advice/a-careful-look-at-different-sedan-dimensions)
                 let defaultHeight = 1.468628;
                 let addBboxParameters = this.props.getDefaultObject();
-                addBboxParameters.class = classesBoundingBox.targetName();
+                addBboxParameters.class = ClassesboundingBox.targetName();
                 addBboxParameters.x = xPos;
                 addBboxParameters.y = yPos;
                 addBboxParameters.z = zPos + defaultHeight / 2 - this.props.positionLidarNuscenes[2];
@@ -3307,7 +3310,7 @@ mouseUpLogic = (ev) => {
                 addBboxParameters.height = defaultHeight;
                 addBboxParameters.rotationY = 0;
                 addBboxParameters.original = {
-                    class: classesBoundingBox.targetName(),
+                    class: ClassesboundingBox.targetName(),
                     x: (groundPointMouseUp.x + groundPointMouseDown.x) / 2,
                     y: (groundPointMouseUp.y + groundPointMouseDown.y) / 2,
                     z: zPos + defaultHeight / 2 - this.props.positionLidarNuscenes[2],
@@ -3344,7 +3347,7 @@ mouseUpLogic = (ev) => {
                     if (channelObj.channel !== undefined && channelObj.channel !== '') {
                         if (addBboxParameters.channels[i].projectedPoints !== undefined && addBboxParameters.channels[i].projectedPoints.length === 8) {
                             let horizontal = addBboxParameters.width > addBboxParameters.length;
-                            addBboxParameters.channels[i]["lines"] = this.calculateAndDrawLineSegments(channelObj, classesBoundingBox.targetName(), horizontal, true);
+                            addBboxParameters.channels[i]["lines"] = this.calculateAndDrawLineSegments(channelObj, ClassesboundingBox.targetName(), horizontal, true);
                         }
                     }
                 }
@@ -3362,7 +3365,7 @@ mouseUpLogic = (ev) => {
 
 
                 this.props.__insertIndex++;
-                classesBoundingBox.target().nextTrackId++;
+                ClassesboundingBox.target().nextTrackId++;
                 for (let channelIdx in this.props.camChannels) {
                     if (this.props.camChannels.hasOwnProperty(channelIdx)) {
                         let camChannel = this.props.camChannels[channelIdx].channel;
@@ -3570,7 +3573,7 @@ initViews = () => {
             background: new THREE.Color(22 / 256.0, 22 / 256.0, 22 / 256.0),
             up: [-1, 0, 0],
             fov: 70,
-            updateCamera: function (camera, scene, objectPosition) {
+            updateCamera: (camera, scene, objectPosition) => {
                 camera.position.set(objectPosition.x + 10, objectPosition.y, objectPosition.z);
                 camera.lookAt(objectPosition);
             }
@@ -3584,7 +3587,7 @@ initViews = () => {
             background: new THREE.Color(22 / 256.0, 22 / 256.0, 22 / 256.0),
             up: [0, -1, 0],
             fov: 70,
-            updateCamera: function (camera, scene, objectPosition) {
+            updateCamera: (camera, scene, objectPosition) => {
                 camera.position.set(objectPosition.x, objectPosition.y + 10, objectPosition.z);
                 camera.lookAt(objectPosition);
             }
@@ -3854,7 +3857,7 @@ loadDetectedBoxes = () => {
                     }
                     params.fileIndex = frameNumber - 1;
                     this.props.set(objectIndexWithinFrame, params);
-                    classesBoundingBox.target().nextTrackId++;
+                    ClassesboundingBox.target().nextTrackId++;
                 }
             }
         }
@@ -4309,8 +4312,8 @@ init = () => {
 
     // guiOptions.open();
     classPickerElem.each(function (i, item) {
-        let propNamesArray = Object.getOwnPropertyNames(classesBoundingBox);
-        let color = classesBoundingBox[propNamesArray[i]].color;
+        let propNamesArray = Object.getOwnPropertyNames(ClassesboundingBox);
+        let color = ClassesboundingBox[propNamesArray[i]].color;
         let attribute = "20px solid" + ' ' + color;
         $(item).css("border-left", attribute);
         $(item).css('border-bottom', '0px');
@@ -4326,13 +4329,13 @@ init = () => {
 
 render(){
   return(
-    <boundingBox 
+    <BoundingBox 
       get3DLabel = {()=>this.get3DLabel()}
     />,
-    <classesBoundingBox 
+    <ClassesboundingBox 
     operationStack = {this.state.operationStack}
     />,
-    <baseLabelTool 
+    <BasebabelTool 
       getObjectIndexByTrackIdAndClass = {()=>this.getObjectIndexByTrackIdAndClass}
       interpolationMode={this.state.interpolationMode}
       initViews={()=>this.initViews}

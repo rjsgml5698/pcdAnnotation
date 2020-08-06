@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import boundingbox from './boundingbox.js';
-import pcdLabelTool from './pcd_label_tool.js';
-import baseBabelTools from './base_label_tool.js';
+import BoundingBox from './boundingbox.js';
+import PcdlabelTool from './pcd_label_tool.js';
+import BasebabelTools from './base_label_tool.js';
 import $ from 'jquery';
 window.$ = $;
 
@@ -739,12 +739,12 @@ export default class ImageLabelTools extends Component {
 
   render(){ 
     return(
-      <pcdLabelTool 
+      <PcdlabelTool 
         getChannelIndexByName = {()=>this.getChannelIndexByName}
         paperArrayAll ={this.state.paperArrayAll}
       />,
 
-      <baseBabelTools
+      <BasebabelTools
         getChannelIndexByName = {()=>this.getChannelIndexByName}
         changeCanvasSize = {()=>this.changeCanvasSize}
       />

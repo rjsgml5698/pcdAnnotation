@@ -1,9 +1,9 @@
 import React, { Component } from "react";
 import * as THREE from 'three';
 import classesBoundingBox from "./classesBoundingBox.js";
-import pcdLabelTool from "./pcd_label_tool.js";
+import PcdlabelTool from "./pcd_label_tool.js";
 // import Toast from "./assets/external_modules/Toast.js";
-import imageLabelTools from './image_label_tool.js';
+import ImagelabelTools from './image_label_tool';
 // import w2ui from 'w2ui';
 import * as JSZip from 'jszip';
 import * as Raphael from 'raphael';
@@ -12,8 +12,7 @@ import boundingBox from "./boundingbox.js";
 import $ from 'jquery';
 window.$ = $;
 
-// console.log("Toast###########", Toast);
-export default class BaseLabelTool extends Component {
+export default class baseLabelTool extends Component {
 
   constructor(props){
     super(props);
@@ -190,7 +189,8 @@ export default class BaseLabelTool extends Component {
   }
 
   componentDidMount(){
-    console.log("boundingBox######################", this.props);
+    //console.log("boundingBox######################", this.props);
+    //console.log("pcdLabelTool##########", pcdLabelTool);
     this.initialize();
     
   }
@@ -1901,7 +1901,7 @@ export default class BaseLabelTool extends Component {
 
   render(){
     return(
-      <pcdLabelTool 
+      <PcdlabelTool 
         onInitialize = {()=>this.onInitialize}
         pointCloudLoaded = {this.state.pointCloudLoaded}
         removeObject = {()=>this.removeObject}
@@ -1944,7 +1944,7 @@ export default class BaseLabelTool extends Component {
         folderSizeArray = {this.state.folderSizeArray}
       />,
 
-      <imageLabelTools 
+      <ImagelabelTools 
         contents={this.state.contents}
         remove={()=>this.remove}
         selectEmpty={()=>this.selectEmpty}
