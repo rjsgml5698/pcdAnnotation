@@ -51,8 +51,6 @@ export default class pcdLabelTool extends Component {
       scene : new THREE.Scene(),
       projector : null,
 
-      
-      //renderer :new THREE.Renderer,
       renderer : null,
       rendererBev : null,
       rendererSideView : null,
@@ -175,436 +173,15 @@ getObjectIndexByTrackIdAndClass = (trackId, className, fileIdx) => {
 // labelTool은 base_babel_tools에 있음
 componentDidMount(){
   console.log("pcd_props", this.props);
- 
-  this.init();
-  //this.animate();
+  this.props.onInitialize("PCD",  () => {
+    if (!this.Detector.webgl) {
+      this.Detector.addGetWebGLMessage();
+    }
+    this.init();
+    this.animate();
+  });
 
    this.loadPCDData();
-}
-
-init() {
-  // 임시 주석
-  //if (WEBGL.isWebGLAvailable() === false) {
-  //    document.body.appendChild(WEBGL.getWebGLErrorMessage());
-  //}
-
-  /**
-   * CameraControls
-   */
-  // function CameraControls() {
-  //     //constructor
-  // }
-
-  // CameraControls.prototype = {
-  //     constructor: CameraControls,
-  //     update: function (camera, keyboard, clock) {
-  //         //functionality to go here
-  //         let delta = clock.getDelta(); // seconds.
-  //         let moveDistance = 10 * delta; // 200 pixels per second
-  //         let rotateAngle = delta;   // pi/2 radians (90 degrees) per second
-  //         if (keyboard.pressed("w")) {
-  //             // camera.translateZ(-moveDistance);
-  //             let angle = Math.abs(camera.rotation.y + Math.PI / 2);
-  //             let posX = camera.position.x + Math.cos(angle) * moveDistance;
-  //             let posY = camera.position.y + Math.sin(angle) * moveDistance;
-  //             camera.position.set(posX, posY, camera.position.z);
-  //         }
-  //         if (keyboard.pressed("s")) {
-  //             let angle = Math.abs(camera.rotation.y + Math.PI / 2);
-  //             moveDistance = -moveDistance;
-  //             let posX = camera.position.x + Math.cos(angle) * moveDistance;
-  //             let posY = camera.position.y + Math.sin(angle) * moveDistance;
-  //             camera.position.set(posX, posY, camera.position.z);
-  //             // camera.position.set(0, 0, camera.position.z + moveDistance);
-  //             // camera.translateZ(moveDistance);
-  //         }
-  //         if (keyboard.pressed("a")) {
-  //             camera.translateX(-moveDistance);//great!
-  //         }
-  //         if (keyboard.pressed("d")) {
-  //             camera.translateX(moveDistance);//great!
-  //         }
-  //         if (keyboard.pressed("q")) {
-  //             camera.position.z = camera.position.z - moveDistance;
-  //         }
-  //         if (keyboard.pressed("e")) {
-  //             camera.position.z = camera.position.z + moveDistance;
-  //         }
-  //
-  //         if (keyboard.pressed("left")) {
-  //             camera.rotateOnAxis(new THREE.Vector3(0, 1, 0), rotateAngle);
-  //         }
-  //         if (keyboard.pressed("right")) {
-  //             camera.rotateOnAxis(new THREE.Vector3(0, 1, 0), -rotateAngle);
-  //         }
-  //         // if (keyboard.pressed("up")) {
-  //         //     camera.rotateOnAxis(new THREE.Vector3(1, 0, 0), rotateAngle);
-  //         // }
-  //         // if (keyboard.pressed("down")) {
-  //         //     camera.rotateOnAxis(new THREE.Vector3(1, 0, 0), -rotateAngle);
-  //         // }
-  //
-  //
-  //     }
-  // };
-  //
-  // cameraControls = new CameraControls();
-  // keyboard = new THREEx.KeyboardState();
-  //const keyboard = new KeyboardState();
-  //const clock = new THREE.Clock();
-  // container = document.createElement('div');
-  // document.body.appendChild(container);
-
-
-  const scene = new THREE.Scene();
-  const birdsEyeViewFlag = this.state.birdsEyeViewFlag;
-
-  scene.background = new THREE.Color(0x323232);
-
-  scene.fog = new THREE.Fog(scene.background, 3500, 15000);
-
-  let axisHelper = new THREE.AxisHelper(1);
-  axisHelper.position.set(0, 0, 0);
-  scene.add(axisHelper);
-
-  let light = new THREE.DirectionalLight(0xffffff, 0.7);
-  light.position.set(0, 0, 6).normalize();
-  scene.add(light);
-
-  const canvas3D = document.getElementById('canvas3d');
-
-  if (birdsEyeViewFlag === false) {
-      canvas3D.removeEventListener('keydown', this.canvas3DKeyDownHandler);
-      canvas3D.addEventListener('keydown', this.canvas3DKeyDownHandler);
-  }
-
-  window.removeEventListener('keydown', this.keyDownHandler);
-  window.addEventListener('keydown', this.keyDownHandler);
-
-  const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      clearColor: 0x000000,
-      clearAlpha: 0,
-      alpha: true,
-      preserveDrawingBuffer: true
-  });
-  // renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-
-  this.setCamera();
-  this.createGrid();
-
-  if ($("#canvas3d").children().size() > 0) {
-      $($("#canvas3d").children()[0]).remove();
-  }
-  canvas3D.appendChild(renderer.domElement);
-
-  // stats = new Stats();
-  // canvas3D.appendChild(stats.dom);
-  window.addEventListener('resize', this.onWindowResize, false);
-  window.addEventListener("contextmenu", function (e) {
-      e.preventDefault();
-  }, false);
-
-  const projector = new Projector();
-  canvas3D.addEventListener('mousemove', this.onDocumentMouseMove, false);
-
-  canvas3D.onmousedown = function (ev) {
-      this.handleMouseDown(ev);
-  };
-
-  canvas3D.onmouseup = function (ev) {
-      this.handleMouseUp(ev);
-  };
-
-  //labelTool.cubeArray = [];
-  //labelTool.spriteArray = [];
-  //labelTool.savedFrames = [];
-  const annotationObjects = this.state.annotationObjects;
-  const guiBoundingBoxAnnotationMap = this.state.guiBoundingBoxAnnotationMap;
-  const guiAnnotationClasses = this.state.guiAnnotationClasses;
-  const parametersBoundingBox = this.state.parametersBoundingBox;
-  
-  annotationObjects.contents = [];
-  for (let i = 0; i < this.props.numFrames; i++) {
-      this.props.cubeArray.push([]);
-      this.props.spriteArray.push([]);
-      this.props.savedFrames.push([]);
-      annotationObjects.contents.push([]);
-  }
-
-  if (guiBoundingBoxAnnotationMap === undefined) {
-      guiBoundingBoxAnnotationMap = {
-          "Vehicle": guiAnnotationClasses.add(parametersBoundingBox, "Vehicle").name("Vehicle"),
-          "Truck": guiAnnotationClasses.add(parametersBoundingBox, "Truck").name("Truck"),
-          "Motorcycle": guiAnnotationClasses.add(parametersBoundingBox, "Motorcycle").name("Motorcycle"),
-          "Bicycle": guiAnnotationClasses.add(parametersBoundingBox, "Bicycle").name("Bicycle"),
-          "Pedestrian": guiAnnotationClasses.add(parametersBoundingBox, "Pedestrian").name("Pedestrian"),
-      };
-      guiAnnotationClasses.domElement.id = 'class-picker';
-      // 3D BB controls
-      //임시주석 = ui 부분
-      //guiOptions.add(parameters, 'download').name("Download Annotations");
-      //guiOptions.add(parameters, 'download_video').name("Download Video");
-      //guiOptions.add(parameters, 'undo').name("Undo");
-      //guiOptions.add(parameters, 'switch_view').name("Switch view");
-      let showOriginalNuScenesLabelsCheckbox = guiOptions.add(parameters, 'show_nuscenes_labels').name('NuScenes Labels').listen();
-      showOriginalNuScenesLabelsCheckbox.onChange(function (value) {
-          labelTool.showOriginalNuScenesLabels = value;
-          if (this.props.showOriginalNuScenesLabels === true) {
-              // TODO: improve:
-              // - do not reset
-              // - show current labels and in addition nuscenes labels
-              this.props.reset();
-              this.props.start();
-          } else {
-              // TODO: hide nuscenes labels (do not reset)
-              this.props.reset();
-              this.props.start();
-          }
-      });
-      let allCheckboxes = $(":checkbox");
-      let showNuScenesLabelsCheckbox = allCheckboxes[0];
-      if (this.props.currentDataset === this.props.datasets.NuScenes) {
-          enableShowNuscenesLabelsCheckbox(showNuScenesLabelsCheckbox);
-      }
-      let chooseSequenceDropDown;
-      guiOptions.add(parameters, 'datasets', ['NuScenes']).name("Choose dataset")
-          .onChange(function (value) {
-              changeDataset(value);
-              let allCheckboxes = $(":checkbox");
-              let showNuScenesLabelsCheckbox = allCheckboxes[0];
-              if (value === labelTool.datasets.NuScenes) {
-                  enableShowNuscenesLabelsCheckbox(showNuScenesLabelsCheckbox);
-                  disableChooseSequenceDropDown(chooseSequenceDropDown.domElement);
-              }
-              hideMasterView();
-          });
-      chooseSequenceDropDown = guiOptions.add(parameters, 'sequences', [
-        this.props.sequencesNuScenes[0]]).name("Choose Sequence")
-          .onChange(function (value) {
-              changeSequence(value);
-              hideMasterView();
-          });
-
-      let showFieldOfViewCheckbox = guiOptions.add(parameters, 'show_field_of_view').name('Field-Of-View').listen();
-      showFieldOfViewCheckbox.onChange(function (value) {
-        this.props.showFieldOfView = value;
-          if (this.props.showFieldOfView === true) {
-            this.props.removeObject('rightplane');
-            this.props.removeObject('leftplane');
-            this.props.removeObject('prism');
-            this.props.drawFieldOfView();
-          } else {
-            this.props.removeObject('rightplane');
-            this.props.removeObject('leftplane');
-            this.props.removeObject('prism');
-          }
-      });
-      let showProjectedPointsCheckbox = guiOptions.add(parameters, 'show_projected_points').name('Show projected points').listen();
-      showProjectedPointsCheckbox.onChange(function (value) {
-          showProjectedPointsFlag = value;
-          if (showProjectedPointsFlag === true) {
-              showProjectedPoints();
-          } else {
-              hideProjectedPoints();
-          }
-      });
-      let showGridCheckbox = guiOptions.add(parameters, 'show_grid').name('Show grid').listen();
-      showGridCheckbox.onChange(function (value) {
-          showGridFlag = value;
-          //let grid = scene.getObjectByName("grid");
-          if (grid === undefined || grid.parent === null) {
-              this.createGrid();
-          }
-          if (showGridFlag === true) {
-              grid.visible = true;
-          } else {
-              grid.visible = false;
-          }
-      });
-      let filterGroundCheckbox = guiOptions.add(parameters, 'filter_ground').name('Filter ground').listen();
-      filterGroundCheckbox.onChange(function (value) {
-          filterGround = value;
-          if (filterGround === true) {
-              labelTool.removeObject("pointcloud-scan-" + labelTool.currentFileIndex);
-              addObject(pointCloudScanNoGroundList[labelTool.currentFileIndex], "pointcloud-scan-no-ground-" + labelTool.currentFileIndex);
-          } else {
-              labelTool.removeObject("pointcloud-scan-no-ground-" + labelTool.currentFileIndex);
-              addObject(pointCloudScanList[labelTool.currentFileIndex], "pointcloud-scan-" + labelTool.currentFileIndex);
-          }
-      });
-
-      let hideOtherAnnotationsCheckbox = guiOptions.add(parameters, 'hide_other_annotations').name('Hide other annotations').listen();
-      hideOtherAnnotationsCheckbox.onChange(function (value) {
-          hideOtherAnnotations = value;
-          let selectionIndex = annotationObjects.getSelectionIndex();
-          if (hideOtherAnnotations === true) {
-              for (let i = 0; i < annotationObjects.contents[labelTool.currentFileIndex].length; i++) {
-                  // remove 3D labels
-                  let mesh = labelTool.cubeArray[labelTool.currentFileIndex][i];
-                  mesh.material.opacity = 0;
-                  // remove all 2D labels
-                  for (let j = 0; j < annotationObjects.contents[labelTool.currentFileIndex][i].channels.length; j++) {
-                      let channelObj = annotationObjects.contents[labelTool.currentFileIndex][i].channels[j];
-                      // remove drawn lines of all 6 channels
-                      for (let lineObj in channelObj.lines) {
-                          if (channelObj.lines.hasOwnProperty(lineObj)) {
-                              let line = channelObj.lines[lineObj];
-                              if (line !== undefined) {
-                                  line.remove();
-                              }
-                          }
-                      }
-                  }
-              }
-              if (selectionIndex !== -1) {
-                  // draw selected object in 2D and 3D
-                  update2DBoundingBox(labelTool.currentFileIndex, selectionIndex, true);
-              }
-          } else {
-              for (let i = 0; i < annotationObjects.contents[labelTool.currentFileIndex].length; i++) {
-                  // show 3D labels
-                  let mesh = labelTool.cubeArray[labelTool.currentFileIndex][i];
-                  mesh.material.opacity = 0.9;
-                  // show 2D labels
-                  if (selectionIndex === i) {
-                      // draw selected object in 2D and 3D
-                      update2DBoundingBox(labelTool.currentFileIndex, selectionIndex, true);
-                  } else {
-                      if (selectionIndex !== -1) {
-                          update2DBoundingBox(labelTool.currentFileIndex, i, false);
-                      }
-                  }
-
-              }
-          }
-
-      });
-
-      guiOptions.add(parameters, 'select_all_copy_label_to_next_frame').name("Select all 'Copy label to next frame'");
-      guiOptions.add(parameters, 'unselect_all_copy_label_to_next_frame').name("Unselect all 'Copy label to next frame'");
-
-
-      let interpolationModeCheckbox = guiOptions.add(parameters, 'interpolation_mode').name('Interpolation Mode');
-      interpolationModeCheckbox.domElement.id = 'interpolation-checkbox';
-      // if scene contains no objects then deactivate checkbox
-      if (annotationFileExist(undefined, undefined) === false || interpolationMode === false) {
-          // no annotation file exist -> deactivate checkbox
-          disableInterpolationModeCheckbox(interpolationModeCheckbox.domElement);
-      }
-
-      interpolationModeCheckbox.onChange(function (value) {
-          interpolationMode = value;
-          if (interpolationMode === true) {
-              interpolationObjIndexCurrentFile = annotationObjects.getSelectionIndex();
-              if (interpolationObjIndexCurrentFile !== -1) {
-                  // set interpolation start position
-                  let obj = annotationObjects.contents[labelTool.currentFileIndex][interpolationObjIndexCurrentFile];
-                  obj["interpolationStart"]["position"]["x"] = obj["x"];
-                  obj["interpolationStart"]["position"]["y"] = obj["y"];
-                  obj["interpolationStart"]["position"]["z"] = obj["z"];
-                  obj["interpolationStart"]["position"]["rotationY"] = obj["rotationY"];
-                  obj["interpolationStart"]["size"]["width"] = obj["width"];
-                  obj["interpolationStart"]["size"]["length"] = obj["length"];
-                  obj["interpolationStart"]["size"]["height"] = obj["height"];
-                  // short interpolation start index (Interpolation Start Position (frame 400)
-                  folderPositionArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Position (frame " + (labelTool.currentFileIndex + 1) + ")";
-                  folderSizeArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Size (frame " + (labelTool.currentFileIndex + 1) + ")";
-                  // set start index
-                  annotationObjects.contents[labelTool.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"] = labelTool.currentFileIndex;
-              }
-              // check 'copy label to next frame' of selected object
-              annotationObjects.contents[labelTool.currentFileIndex][interpolationObjIndexCurrentFile]["copyLabelToNextFrame"] = true;
-              let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + interpolationObjIndexCurrentFile);
-              checkboxElem.firstChild.checked = true;
-              // disable checkbox
-              disableCopyLabelToNextFrameCheckbox(checkboxElem);
-          } else {
-              disableInterpolationBtn();
-              if (interpolationObjIndexCurrentFile !== -1) {
-                  folderPositionArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Position";
-                  folderSizeArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Size";
-                  enableStartPositionAndSize();
-                  //[1].__folders[""Interpolation End Position (frame 1)""]
-                  for (let i = 0; i < folderBoundingBox3DArray.length; i++) {
-                      // get all keys of folders object
-                      let keys = Object.keys(folderBoundingBox3DArray[i].__folders);
-                      for (let j = 0; j < keys.length; j++) {
-                          if (keys[j].startsWith("Interpolation End")) {
-                              folderBoundingBox3DArray[i].removeFolder(keys[j]);
-                          }
-                      }
-                  }
-                  // folderBoundingBox3DArray[interpolationObjIndexCurrentFile].removeFolder("Interpolation End Position (frame " + (labelTool.previousFileIndex + 1) + ")");
-                  // folderBoundingBox3DArray[interpolationObjIndexCurrentFile].removeFolder("Interpolation End Size (frame " + (labelTool.previousFileIndex + 1) + ")");
-                  // enable checkbox
-                  let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + interpolationObjIndexCurrentFile);
-                  enableCopyLabelToNextFrameCheckbox(checkboxElem);
-              }
-              interpolationObjIndexCurrentFile = -1;
-
-          }
-      });
-      interpolateBtn = guiOptions.add(parameters, 'interpolate').name("Interpolate");
-      interpolateBtn.domElement.id = 'interpolate-btn';
-      disableInterpolationBtn();
-
-      guiOptions.add(parameters, 'reset_all').name("Reset all");
-      guiOptions.add(parameters, 'skip_frames').name("Skip frames").onChange(function (value) {
-          if (value === "") {
-              value = 1;
-          } else {
-              value = parseInt(value);
-          }
-          labelTool.skipFrameCount = value;
-      });
-
-
-      guiOptions.domElement.id = 'bounding-box-3d-menu';
-      // add download Annotations button
-      let downloadAnnotationsItem = $($('#bounding-box-3d-menu ul li')[0]);
-      let downloadAnnotationsDivItem = downloadAnnotationsItem.children().first();
-      downloadAnnotationsDivItem.wrap("<a href=\"\"></a>");
-      loadColorMap();
-      if (showProjectedPointsFlag === true) {
-          showProjectedPoints();
-      } else {
-          hideProjectedPoints();
-      }
-  }
-  let classPickerElem = $('#class-picker ul li');
-  classPickerElem.css('background-color', '#353535');
-  $(classPickerElem[0]).css('background-color', '#525252');
-  classPickerElem.css('border-bottom', '0px');
-
-
-  $('#bounding-box-3d-menu').css('width', '480px');
-  $('#bounding-box-3d-menu ul li').css('background-color', '#353535');
-  $("#bounding-box-3d-menu .close-button").click(function () {
-      guiOptionsOpened = !guiOptionsOpened;
-      if (guiOptionsOpened === true) {
-          $("#right-btn").css("right", 430);
-      } else {
-          $("#right-btn").css("right", -50);
-      }
-  });
-
-  guiOptions.open();
-  classPickerElem.each(function (i, item) {
-      let propNamesArray = Object.getOwnPropertyNames(classesBoundingBox);
-      let color = classesBoundingBox[propNamesArray[i]].color;
-      let attribute = "20px solid" + ' ' + color;
-      $(item).css("border-left", attribute);
-      $(item).css('border-bottom', '0px');
-  });
-
-  // let elem = $("#label-tool-log");
-  // elem.val("1. Draw bounding box ");
-  // elem.css("color", "#969696");
-
-  initViews();
-
 }
 
 interpolate = () => {
@@ -1925,44 +1502,6 @@ onDraggingChangedHandler = (event) => {
     }
 }
 
-render3d = () => {
-
-  let mainView = views[0];
-    renderer.setViewport(mainView.left, mainView.top, mainView.width, mainView.height);
-    renderer.setScissor(mainView.left, mainView.top, mainView.width, mainView.height);
-    renderer.setScissorTest(true);
-    renderer.setClearColor(mainView.background);
-
-    currentCamera.aspect = mainView.width / mainView.height;
-    currentCamera.updateProjectionMatrix();
-    renderer.render(scene, currentCamera);
-
-    // renderer.clear();
-    if (labelTool.selectedMesh !== undefined) {
-        for (let i = 1; i < views.length; i++) {
-            let view = views[i];
-            let camera = view.camera;
-            view.updateCamera(camera, scene, labelTool.selectedMesh.position);
-            renderer.setViewport(view.left, view.top, view.width, view.height);
-            renderer.setScissor(view.left, view.top, view.width, view.height);
-            renderer.setScissorTest(true);
-            renderer.setClearColor(view.background);
-            camera.aspect = view.width / view.height;
-            camera.updateProjectionMatrix();
-            renderer.render(scene, camera);
-        }
-    }
-
-    if (labelTool.cubeArray !== undefined && labelTool.cubeArray.length > 0 && labelTool.cubeArray[labelTool.currentFileIndex] !== undefined && labelTool.cubeArray[labelTool.currentFileIndex].length > 0
-        && labelTool.spriteArray !== undefined && labelTool.spriteArray.length > 0 && labelTool.spriteArray[labelTool.currentFileIndex] !== undefined && labelTool.spriteArray[labelTool.currentFileIndex].length > 0) {
-        this.updateAnnotationOpacity();
-        this.updateScreenPosition();
-    }
-    if (keyboardNavigation === false) {
-        currentOrbitControls.update();
-    }
-}
-
 addTransformControls = () => {
   const scene = this.state.scene;
   const renderer = this.state.renderer;
@@ -2010,6 +1549,9 @@ keyDownHandler = (event) => {
   const interpolationMode = this.state.interpolationMode;
   const birdsEyeViewFlag = this.state.birdsEyeViewFlag;
 
+
+
+
     if (this.props.selectedMesh !== undefined) {
         switch (event.keyCode) {
             case 17: // Ctrl
@@ -2018,7 +1560,7 @@ keyDownHandler = (event) => {
                     let newRotation = Math.ceil(this.props.selectedMesh.rotation.z / THREE.Math.degToRad(15));
                     let lowerBound = newRotation * 15;
                     if (this.props.selectedMesh.rotation.z - lowerBound < THREE.Math.degToRad(15) / 2) {
-                        // rotate to lower bound`
+                        // rotate to lower bound
                         this.props.selectedMesh.rotation.z = lowerBound;
                     } else {
                         // rotate to upper bound
@@ -2407,14 +1949,12 @@ setCamera = () => {
         // currentOrbitControls.addEventListener('change', render);
     } else {
         // BEV
-        console.log("transformControls",transformControls);
         if (transformControls !== undefined) {
             transformControls.showZ = false;
         }
 
         const currentCamera = new THREE.OrthographicCamera(-40, 40, 20, -20, 0.0001, 2000);
         // currentCamera = orthographicCamera;
-        console.log("currentCamera",currentCamera);
         currentCamera.position.set(0, 0, 5);
         currentCamera.up.set(0, 0, 1);
 
@@ -4326,11 +3866,9 @@ loadDetectedBoxes = () => {
 }
 
 init = () => {
-    //if (this.WEBGL.isWebGLAvailable() === false) {
-    //    document.body.appendChild(this.WEBGL.getWebGLErrorMessage());
-    //}
-
-    
+    if (this.WEBGL.isWebGLAvailable() === false) {
+        document.body.appendChild(this.WEBGL.getWebGLErrorMessage());
+    }
 
     const currentState = this.state;
     /**
@@ -4402,7 +3940,7 @@ init = () => {
     const scene = this.state.scene;
     const canvas3D = this.state.canvas3D;
     // render 값 
-    // const renderer = this.state.renderer;/
+    const renderer = this.state.renderer;
     const projector = this.state.projector;
     const folderBoundingBox3DArray = this.state.folderBoundingBox3DArray;
     const interpolationObjIndexCurrentFile = this.state.interpolationObjIndexCurrentFile;
@@ -4441,18 +3979,18 @@ init = () => {
     light.position.set(0, 0, 6).normalize();
     scene.add(light);
 
-    let canvas3D_div = document.getElementById('canvas3d');
+    canvas3D = document.getElementById('canvas3d');
 
 
     if (birdsEyeViewFlag === false) {
-      canvas3D_div.removeEventListener('keydown', this.canvas3DKeyDownHandler);
-      canvas3D_div.addEventListener('keydown', this.canvas3DKeyDownHandler);
+        canvas3D.removeEventListener('keydown', this.canvas3DKeyDownHandler);
+        canvas3D.addEventListener('keydown', this.canvas3DKeyDownHandler);
     }
 
     window.removeEventListener('keydown', this.keyDownHandler);
     window.addEventListener('keydown', this.keyDownHandler);
 
-    const renderer = new THREE.WebGLRenderer({
+    renderer = new THREE.WebGLRenderer({
         antialias: true,
         clearColor: 0x000000,
         clearAlpha: 0,
@@ -4463,7 +4001,7 @@ init = () => {
     // setstate
     this.setState({
       renderer: renderer,
-      canvas3D: canvas3D_div
+      canvas3D: canvas3D
     })
     // renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -4791,11 +4329,27 @@ init = () => {
 
 render(){
   return(
-    <div className="App">
-      <header className="App-header">
-       PCD_LABEL_TOOLS
-      </header>
-    </div>
+    <BoundingBox 
+      get3DLabel = {()=>this.get3DLabel()}
+    />,
+    <ClassesboundingBox 
+    operationStack = {this.state.operationStack}
+    />,
+    <BasebabelTool 
+      getObjectIndexByTrackIdAndClass = {()=>this.getObjectIndexByTrackIdAndClass}
+      interpolationMode={this.state.interpolationMode}
+      initViews={()=>this.initViews}
+      headerHeight={this.state.headerHeight}
+      interpolateBtn={this.state.interpolateBtn}
+      addBoundingBoxGui={()=>this.addBoundingBoxGui}
+      currentCamera={this.state.currentCamera}
+      PrismGeometry={()=>this.PrismGeometry}
+      renderer={this.state.renderer}
+      calculateProjectedBoundingBox={()=>this.calculateProjectedBoundingBox}
+      interpolationObjIndexNextFile={this.state.interpolationObjIndexNextFile}
+      addTransformControls={()=>this.addTransformControls}
+    />
+    
   )
 }
 }

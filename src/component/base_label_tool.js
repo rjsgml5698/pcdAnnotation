@@ -1921,6 +1921,7 @@ export default class baseLabelTool extends Component {
         playSequence = {this.state.playSequence}
         nextFrame = {() => this.nextFrame}
         camChannels = {this.state.camChannels}
+        annotationObjects= {this.state.annotationObjects}
         translationVectorLidarToCamFront = {this.state.translationVectorLidarToCamFront}
         reset = {()=>this.reset}
         start = {()=>this.start}
