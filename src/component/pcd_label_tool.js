@@ -3,7 +3,14 @@ import baseLabelTool from "./base_label_tool";
 import boundingBox from './boundingbox.js';
 import * as THREE from 'three';
 import classesBoundingBox from './classesBoundingBox.js';
-import { MTLLoader, OBJLoader } from "three-obj-mtl-loader";
+import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
+import { PCDLoader } from "three/examples/jsm/loaders/PCDLoader";
+import { TrackballControls } from "three/examples/jsm/controls/TrackballControls";
+import { TransformControls } from "three/examples/jsm/controls/TransformControls";
+// import { PointerLockControls } from "three/examples/js/controls/PointerLockControls";
+import { Projector } from "three/examples/jsm/renderers/Projector";
+
 import $ from 'jquery';
 window.$ = $;
 
@@ -521,7 +528,7 @@ loadPCDData = () => {
     const pointCloudScanNoGroundList = this.state.pointCloudScanNoGroundList;
     const pointCloudScanList = this.state.pointCloudScanList;
     // ASCII pcd files
-    let pcdLoader = new THREE.PCDLoader();
+    let pcdLoader = new PCDLoader();
     let pointCloudFullURL;
     let pointCloudWithoutGroundURL;
     pointCloudWithoutGroundURL = 'input/' + this.state.currentDataset + '/' + this.state.currentSequence + '/' + 'pointclouds_without_ground/' + this.state.fileNames[this.state.currentFileIndex] + '.pcd';
@@ -571,7 +578,7 @@ loadPCDData = () => {
 
     this.loadObjModel(lexusMaterial, './assets/models/lexus/lexus_hs.obj');
 
-    let objLoader = new THREE.OBJLoader();
+    let objLoader = new OBJLoader();
     objLoader.load('./assets/models/lexus/lexus_hs.obj', function (object) {
         let lexusGeometry = object.children[0].geometry;
         let lexusMesh = new THREE.Mesh(lexusGeometry, lexusMaterial);
@@ -1501,7 +1508,7 @@ addTransformControls = () => {
 
 
     if (transformControls === undefined) {
-        transformControls = new THREE.TransformControls(currentCamera, renderer.domElement);
+        transformControls = new TransformControls(currentCamera, renderer.domElement);
         transformControls.name = "transformControls";
     } else {
         if (transformControls.object !== this.props.selectedMesh) {
@@ -1675,7 +1682,7 @@ setOrbitControls = () =>{
     currentCamera.up.set(0, 0, 1);
 
   
-    const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
+    const currentOrbitControls = new TrackballControls(currentCamera, renderer.domElement);
 
     this.setState({
       currentCamera: currentCamera,
@@ -1814,7 +1821,7 @@ setPointerLockControls = () => {
   const canvas3D = this.state.canvas3D;
   const currentCamera = this.state.currentCamera;
 
-  const pointerLockControls = new THREE.PointerLockControls(currentCamera, canvas3D);
+  const pointerLockControls = new TrackballControls(currentCamera, canvas3D);
   const pointerLockObject = pointerLockControls.getObject();
 
   this.setState({
@@ -1995,7 +2002,7 @@ render3d = () => {
     // renderer.setClearColor(new THREE.Color(22 / 256.0, 22 / 256.0, 22 / 256.0));
     // render main window
     const scene = this.state.scene;
-    const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
+    const currentOrbitControls = new TrackballControls(currentCamera, renderer.domElement);
     const currentCamera = this.state.currentCamera;
 
     const keyboardNavigation = this.state.keyboardNavigation;
@@ -2092,7 +2099,7 @@ update = () => {
   const keyboard = this.state.keyboard;
   const clock = this.state.clock;
 
-  const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
+  const currentOrbitControls = new TrackballControls(currentCamera, renderer.domElement);
     // disable rotation of orbit controls if object selected
     if (birdsEyeViewFlag === false) {
         if (this.props.selectedMesh !== undefined) {
@@ -2741,7 +2748,7 @@ onDocumentMouseWheel = (event) => {
     let mX = (event.clientX / $(container).width()) * 2 - 1;
     let mY = -(event.clientY / $(container).height()) * 2 + 1;
     let vector = new THREE.Vector3(mX, mY, 0.1);
-    const currentOrbitControls = new THREE.OrbitControls(currentCamera, renderer.domElement);
+    const currentOrbitControls = new TrackballControls(currentCamera, renderer.domElement);
 
     vector.unproject(currentCamera);
     vector.sub(currentCamera.position);
@@ -4011,7 +4018,7 @@ init = () => {
         e.preventDefault();
     }, false);
 
-    projector = new THREE.Projector();
+    projector = new Projector();
     canvas3D.addEventListener('mousemove', this.onDocumentMouseMove, false);
 
     canvas3D.onmousedown = function (ev) {
@@ -4332,6 +4339,12 @@ render(){
       headerHeight={this.state.headerHeight}
       interpolateBtn={this.state.interpolateBtn}
       addBoundingBoxGui={()=>this.addBoundingBoxGui}
+      currentCamera={this.state.currentCamera}
+      PrismGeometry={()=>this.PrismGeometry}
+      renderer={this.state.renderer}
+      calculateProjectedBoundingBox={()=>this.calculateProjectedBoundingBox}
+      interpolationObjIndexNextFile={this.state.interpolationObjIndexNextFile}
+      addTransformControls={()=>this.addTransformControls}
     />
     
   )

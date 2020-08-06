@@ -34,9 +34,9 @@ export default class AjaxWrapper extends Component {
                 res = this.parseAnnotationFile(fileName);
                 options.success(res);
                 break;
-        }
+      }
     }
-}
+  }
 
   annotationFileExist(fileIndex, channel) {
     let url;

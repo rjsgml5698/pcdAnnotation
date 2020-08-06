@@ -742,8 +742,12 @@ export default class ImageLabelTools extends Component {
       <pcdLabelTool 
         getChannelIndexByName = {()=>this.getChannelIndexByName}
         paperArrayAll ={this.state.paperArrayAll}
-      />
+      />,
 
+      <baseBabelTools
+        getChannelIndexByName = {()=>this.getChannelIndexByName}
+        changeCanvasSize = {()=>this.changeCanvasSize}
+      />
     )
   }
 }

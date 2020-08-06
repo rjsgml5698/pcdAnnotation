@@ -2,21 +2,22 @@ import React, { Component } from "react";
 import * as THREE from 'three';
 import classesBoundingBox from "./classesBoundingBox.js";
 import pcdLabelTool from "./pcd_label_tool.js";
+// import Toast from "./assets/external_modules/Toast.js";
 import imageLabelTools from './image_label_tool.js';
-import w2ui from 'w2ui';
+// import w2ui from 'w2ui';
 import * as JSZip from 'jszip';
 import * as Raphael from 'raphael';
-// import imageLabelTool from "./image_label_tool";
 
 import boundingBox from "./boundingbox.js";
 import $ from 'jquery';
 window.$ = $;
 
+// console.log("Toast###########", Toast);
 export default class BaseLabelTool extends Component {
 
   constructor(props){
     super(props);
-    this.state ={
+    this.state = {
       datasets: Object.freeze({"NuScenes": "NuScenes"}),
       sequencesNuScenes: [],
       scene: new THREE.Scene(),
@@ -623,7 +624,7 @@ export default class BaseLabelTool extends Component {
       });
 
       let toasts = $(".toasts")[0];
-      this.logger = new Toast(toasts);
+      // this.logger = new Toast(toasts);
 
       if (this.state.currentDataset === this.state.datasets.NuScenes) {
           for (let channelIdx in this.state.camChannels) {
@@ -646,35 +647,37 @@ export default class BaseLabelTool extends Component {
               for (let i = 0; i < this.state.fileNames.length; i++) {
                 
                   fileName = this.state.fileNames[i] + ".txt";
-                  request({
-                      url: '/label/annotations/',
-                      type: 'GET',
-                      dataType: 'json',
-                      data: {
-                          file_name: fileName
-                      },
-                      success: function (res) {
-                          this.loadAnnotationsNuscenes(res, i);
-                      }.bind(this),
-                      error: function (res) {
-                      }.bind(this)
-                  });
+                  // 임시 제거
+                  // request({
+                  //     url: '/label/annotations/',
+                  //     type: 'GET',
+                  //     dataType: 'json',
+                  //     data: { 
+                  //         file_name: fileName
+                  //     },
+                  //     success: function (res) {
+                  //         this.loadAnnotationsNuscenes(res, i);
+                  //     }.bind(this),
+                  //     error: function (res) {
+                  //     }.bind(this)
+                  // });
               }
           } else {
               fileName = this.state.currentDataset + "_" + this.state.currentSequence + "_annotations.txt";
-              request({
-                  url: '/label/annotations/',
-                  type: 'GET',
-                  dataType: 'json',
-                  data: {
-                      file_name: fileName
-                  },
-                  success: function (res) {
-                      this.loadAnnotationsJSON(res);
-                  }.bind(this),
-                  error: function (res) {
-                  }.bind(this)
-              });
+              // 임시제거
+              // request({
+              //     url: '/label/annotations/',
+              //     type: 'GET',
+              //     dataType: 'json',
+              //     data: {
+              //         file_name: fileName
+              //     },
+              //     success: function (res) {
+              //         this.loadAnnotationsJSON(res);
+              //     }.bind(this),
+              //     error: function (res) {
+              //     }.bind(this)
+              // });
           }
       }
   }
@@ -760,11 +763,11 @@ export default class BaseLabelTool extends Component {
       $("#layout_layout_panel_top .w2ui-panel-content").empty();
 
       if (this.state.currentDataset === this.state.datasets.NuScenes) {
-          w2ui['layout'].panels[0].minSize = Math.ceil(window.innerWidth) / (6 * 1.7778);
-          w2ui['layout'].panels[0].maxSize = 360;
-          w2ui['layout'].panels[0].size = Math.ceil(window.innerWidth) / (6 * 1.7778);
+          // w2ui['layout'].panels[0].minSize = Math.ceil(window.innerWidth) / (6 * 1.7778);
+          // w2ui['layout'].panels[0].maxSize = 360;
+          // w2ui['layout'].panels[0].size = Math.ceil(window.innerWidth) / (6 * 1.7778);
       }
-      w2ui['layout'].resize();
+      // w2ui['layout'].resize();
 
       this.props.BoundingBoxClassify.content = [];
       $("#frame-selector__frames").empty();
@@ -844,7 +847,7 @@ export default class BaseLabelTool extends Component {
   }
 
   createPlane(name, angle, xpos, ypos, channel) {
-      let channelIdx = getChannelIndexByName(channel);
+      let channelIdx = this.props.getChannelIndexByName(channel);
       let geometryRightPlane = new THREE.BoxGeometry(this.state.camChannels[channelIdx].fieldOfView, 2, 0.08);
       geometryRightPlane.rotateX(Math.PI / 2);
       geometryRightPlane.rotateZ(angle);
@@ -857,6 +860,7 @@ export default class BaseLabelTool extends Component {
       });
       let planeRight = new THREE.Mesh(geometryRightPlane, material);
       planeRight.name = name;
+      let scene = this.state.scene;
       scene.add(planeRight);
   }
 
@@ -872,10 +876,15 @@ export default class BaseLabelTool extends Component {
       let positionCornerRight = new THREE.Vector2(posXRight, posYRight);
       let materialPrism = new THREE.MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.5});
       let height = 2;
-      let geometryPrism = new PrismGeometry([positionCornerCenter, positionCornerLeft, positionCornerRight], height);
+      //원본
+      // let geometryPrism = new PrismGeometry([positionCornerCenter, positionCornerLeft, positionCornerRight], height);
+      // 수정
+      let geometryPrism = this.props.PrismGeometry([positionCornerCenter, positionCornerLeft, positionCornerRight], height);
       geometryPrism.translate(-posy, posx, -1.7);
       let prismMesh = new THREE.Mesh(geometryPrism, materialPrism);
       prismMesh.name = "prism";
+      let scene = this.state.scene;
+      
       scene.add(prismMesh);
   }
 
@@ -977,6 +986,9 @@ export default class BaseLabelTool extends Component {
 
     const scene = this.state.scene;
     const logger = this.state.logger;
+    const annotationObjects = this.state.annotationObjects;
+    const interpolationObjIndexNextFile = this.props.interpolationObjIndexNextFile;
+    const renderer = this.props.renderer;
 
       if (newFileIndex === this.state.numFrames - 1 && this.state.playSequence === true) {
           // last frame will be shown
@@ -1014,12 +1026,16 @@ export default class BaseLabelTool extends Component {
           if (checkboxElem !== null) {
               copyFlags.push(checkboxElem.firstChild.checked);
           }
-          guiOptions.removeFolder(this.props.contents[this.state.currentFileIndex][i]["class"] + ' ' + annotationObjects.contents[this.state.currentFileIndex][i]["trackId"]);
+          // 임시주석
+          // guiOptions.removeFolder(this.props.contents[this.state.currentFileIndex][i]["class"] + ' ' + annotationObjects.contents[this.state.currentFileIndex][i]["trackId"]);
       }
       // empty all folder arrays
-      folderBoundingBox3DArray = [];
-      folderPositionArray = [];
-      folderSizeArray = [];
+      // folderBoundingBox3DArray = [];
+      const folderBoundingBox3DArray = this.state.folderBoundingBox3DArray;
+      const folderPositionArray = this.state.folderPositionArray;
+      const folderSizeArray = this.state.folderSizeArray;
+      // folderPositionArray = [];
+      // folderSizeArray = [];
 
       if (this.state.cubeArray[newFileIndex].length === 0) {
           // move 3D objects to new frame if nextFrame has no labels and copy flag is set
@@ -1069,7 +1085,7 @@ export default class BaseLabelTool extends Component {
               const vector = new THREE.Vector3(mesh.position.x, mesh.position.y, mesh.position.z + mesh.scale.z / 2);
               const canvas = renderer.domElement;
               // currentCamera from pcd js
-              vector.project(currentCamera);
+              vector.project(this.props.currentCamera);
               vector.x = Math.round((0.5 + vector.x / 2) * (canvas.width));
               vector.y = Math.round((0.5 - vector.y / 2) * (canvas.height));
               $(classTooltipElement[0]).css("top", `${vector.y + this.props.headerHeight + imagePaneHeight - 21}px`);
@@ -1220,7 +1236,7 @@ export default class BaseLabelTool extends Component {
           this.props.__selectionIndexCurrentFrame = this.props.__selectionIndexNextFrame;
           this.selectedMesh = this.state.cubeArray[newFileIndex][selectionIndexNextFile];
           if (this.selectedMesh !== undefined) {
-              addTransformControls();
+              this.props.addTransformControls();
           } else {
             this.removeObject("transformControls");
           }
@@ -1423,6 +1439,8 @@ export default class BaseLabelTool extends Component {
   }
 
   draw2DProjections(params) {
+    const calculateProjectedBoundingBox = this.props.calculateProjectedBoundingBox;
+
       for (let i = 0; i < params.channels.length; i++) {
           if (params.channels[i].channel !== undefined && params.channels[i].channel !== "") {
               params.channels[i].projectedPoints = calculateProjectedBoundingBox(params.x, params.y, params.z, params.width, params.length, params.height, params.channels[i].channel, params.rotationY);
@@ -1430,7 +1448,7 @@ export default class BaseLabelTool extends Component {
               let channelObj = params.channels[i];
               if (params.channels[i].projectedPoints !== undefined && params.channels[i].projectedPoints.length === 8) {
                   let horizontal = params.width > params.length;
-                  params.channels[i].lines = calculateAndDrawLineSegments(channelObj, params.class, horizontal, false);
+                  params.channels[i].lines = this.calculateAndDrawLineSegments(channelObj, params.class, horizontal, false);
               }
           }
       }
@@ -1595,11 +1613,11 @@ export default class BaseLabelTool extends Component {
                       let channelObj = this.state.camChannels[channelIdx];
                       let channel = channelObj.channel;
                       if (this.state.currentDataset === this.state.datasets.NuScenes) {
-                          changeCanvasSize(newWidth, newImagePanelHeight, channel);
+                          this.changeCanvasSize(newWidth, newImagePanelHeight, channel);
                       }
                   }
               }
-              w2ui['layout'].set('top', {size: newImagePanelHeight});
+              // w2ui['layout'].set('top', {size: newImagePanelHeight});
               // adjust height of helper views
               let newCanvasHeight = (window.innerHeight - this.props.headerHeight - newImagePanelHeight) / 3;
               console.log(this.props.headerHeight + newImagePanelHeight);
@@ -1647,17 +1665,17 @@ export default class BaseLabelTool extends Component {
               console.log('object ' + event.target + ' is refreshed');
               event.onComplete = function () {
                   $("#layout_layout_resizer_top").on('click', function () {
-                      w2ui['layout'].resize();
+                      // w2ui['layout'].resize();
                   });
                   $("#layout_layout_resizer_top").on('drag', function () {
-                      w2ui['layout'].resize();
+                      // w2ui['layout'].resize();
                   });
               }
           }
       });
-      w2ui['layout'].resizer = 10;
-      w2ui['layout'].resize();
-      w2ui['layout'].refresh();
+      // w2ui['layout'].resizer = 10;
+      // w2ui['layout'].resize();
+      // w2ui['layout'].refresh();
   }
 
   // $("#previous-frame-button").keyup(function (e) {
@@ -1675,7 +1693,7 @@ export default class BaseLabelTool extends Component {
   calculateAndDrawLineSegments(channelObj, className, horizontal, selected) {
       let channel = channelObj.channel;
       let lineArray = [];
-      let channelIdx = getChannelIndexByName(channel);
+      let channelIdx = this.props.getChannelIndexByName(channel);
       // temporary color bottom 4 lines in yellow to check if projection matrix is correct
       // let color = '#ffff00';
       // uncomment line to use yellow to color bottom 4 lines
@@ -1749,6 +1767,7 @@ export default class BaseLabelTool extends Component {
   }
 
   takeScreenshot(){
+      const renderer = this.props.renderer;
       let imgData = renderer.domElement.toDataURL();
       const frameScreenshots = this.state.frameScreenshots;
 
@@ -1756,17 +1775,17 @@ export default class BaseLabelTool extends Component {
   }
 
 
-  getZipVideoFrames() {
-      let zip = new JSZip();
-      const frameScreenshots = this.state.frameScreenshots;
-      // for (let i = 0; i < 899; i++) {
-      for (let i = 0; i < 449; i++) {
-          let substring = frameScreenshots[i].substring(22, frameScreenshots[i].length);
-          let byteArray = Base64Binary.decodeArrayBuffer(substring);
-          zip.file(this.pad(i, 6) + ".png", byteArray);
-      }
-      return zip;
-  }
+  //getZipVideoFrames() {
+  //    let zip = new JSZip();
+  //    const frameScreenshots = this.state.frameScreenshots;
+  //    // for (let i = 0; i < 899; i++) {
+  //    for (let i = 0; i < 449; i++) {
+  //        let substring = frameScreenshots[i].substring(22, frameScreenshots[i].length);
+  //        let byteArray = Base64Binary.decodeArrayBuffer(substring);
+  //        zip.file(this.pad(i, 6) + ".png", byteArray);
+  //    }
+  //    return zip;
+  //}
 
   initTimer = () => {
       const timeElapsed = this.state.timeElapsed;

@@ -6,7 +6,7 @@ import classBoundingBox from './classesBoundingBox.js';
 import $ from 'jquery';
 window.$ = $;
 
-console.log("baseBabelTools", baseBabelTools)
+//console.log("baseBabelTools", baseBabelTools)/
 export default class BoundingBox extends Component {
 
 constructor(props){
