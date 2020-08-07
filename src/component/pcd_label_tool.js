@@ -10,7 +10,7 @@ import { TrackballControls } from "three/examples/jsm/controls/TrackballControls
 import { TransformControls } from "three/examples/jsm/controls/TransformControls";
 // import { PointerLockControls } from "three/examples/js/controls/PointerLockControls";
 import { Projector } from "three/examples/jsm/renderers/Projector";
-
+import * as dat from 'dat.gui';
 import $ from 'jquery';
 import { ConeBufferGeometry } from "three";
 window.$ = $;
@@ -88,7 +88,7 @@ export default class pcdLabelTool extends Component {
 
       // 사이드 메뉴 조작부분 현재는 주석처리
       // guiAnnotationClasses : new dat.GUI({autoPlace: true, width: 90, resizable: false}),
-      // guiOptions : new dat.GUI({autoPlace: true, width: 350, resizable: false}),
+      //guiOptions : new dat.GUI({autoPlace: true, width: 350, resizable: false}),
 
       guiBoundingBoxAnnotationMap: null,
       guiOptionsOpened : true,
@@ -179,7 +179,7 @@ componentDidMount(){
   this.init();
   //this.animate();
 
-   this.loadPCDData();
+  this.loadPCDData();
 }
 
 init() {
@@ -288,6 +288,11 @@ init() {
       alpha: true,
       preserveDrawingBuffer: true
   });
+
+  this.setState({
+    renderer: renderer
+  })
+
   // renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -324,7 +329,77 @@ init() {
   const guiBoundingBoxAnnotationMap = this.state.guiBoundingBoxAnnotationMap;
   const guiAnnotationClasses = this.state.guiAnnotationClasses;
   const parametersBoundingBox = this.state.parametersBoundingBox;
-  
+  const showProjectedPointsFlag = this.state.showProjectedPointsFlag;
+  const showGridFlag = this.state.showGridFlag;
+  const filterGround = this.state.filterGround;
+  const grid = this.state.grid;
+  const folderBoundingBox3DArray = this.state.folderBoundingBox3DArray;
+  const pointCloudScanNoGroundList = this.state.pointCloudScanNoGroundList;
+  const interpolateBtn = this.state.interpolateBtn;
+  const hideOtherAnnotations = this.state.hideOtherAnnotations;
+  const folderPositionArray = this.state.folderPositionArray;
+  const folderSizeArray = this.state.folderSizeArray;
+  let interpolationMode = this.state.interpolationMode;
+
+  const parameters = {
+    download_video: () => {
+        this.downloadVideo();
+    },
+    download: () => {
+        this.download();
+    },
+    undo: () => {
+        this.undoOperation();
+    },
+    i: -1,
+    switch_view: () => {
+        this.switchView();
+    },
+    datasets: this.state.datasets.NuScenes,
+    sequences: "ONE",
+    show_projected_points: false,
+    show_nuscenes_labels: this.state.showOriginalNuScenesLabels,
+    show_field_of_view: false,
+    show_grid: false,
+    filter_ground: false,
+    hide_other_annotations: hideOtherAnnotations,
+    select_all_copy_label_to_next_frame: () => {
+        for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
+            annotationObjects.contents[this.state.currentFileIndex][i]["copyLabelToNextFrame"] = true;
+            let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + i);
+            checkboxElem.firstChild.checked = true;
+        }
+    },
+    unselect_all_copy_label_to_next_frame: () => {
+        for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
+            // set all to false, expect the selected object (if interpolation mode active)
+            let interpolationMode = this.state.interpolationMode;
+
+            if (interpolationMode === false || i !== annotationObjects.getSelectionIndex()) {
+                annotationObjects.contents[this.state.currentFileIndex][i]["copyLabelToNextFrame"] = false;
+                let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + i);
+                checkboxElem.firstChild.checked = false;
+                $(checkboxElem).children().first().removeAttr("checked");
+            } else {
+                annotationObjects.contents[this.state.currentFileIndex][i]["copyLabelToNextFrame"] = true;
+                let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + i);
+                checkboxElem.firstChild.checked = true;
+            }
+        }
+    },
+    show_detections: false,
+    interpolation_mode: false,
+    interpolate: () => {
+        if (interpolationMode === true) {
+            this.interpolate();
+        }
+    },
+    reset_all: () => {
+        this.props.resetBoxes()
+    },
+    skip_frames: this.props.skipFrameCount
+  };
+
   annotationObjects.contents = [];
   for (let i = 0; i < this.props.numFrames; i++) {
       this.props.cubeArray.push([]);
@@ -348,9 +423,10 @@ init() {
       //guiOptions.add(parameters, 'download_video').name("Download Video");
       //guiOptions.add(parameters, 'undo').name("Undo");
       //guiOptions.add(parameters, 'switch_view').name("Switch view");
-      let showOriginalNuScenesLabelsCheckbox = guiOptions.add(parameters, 'show_nuscenes_labels').name('NuScenes Labels').listen();
-      showOriginalNuScenesLabelsCheckbox.onChange(function (value) {
-          labelTool.showOriginalNuScenesLabels = value;
+      //let showOriginalNuScenesLabelsCheckbox = guiOptions.add(parameters, 'show_nuscenes_labels').name('NuScenes Labels').listen();
+      let showOriginalNuScenesLabelsCheckbox;
+      showOriginalNuScenesLabelsCheckbox.onChange( (value) => {
+          this.props.showOriginalNuScenesLabels = value;
           if (this.props.showOriginalNuScenesLabels === true) {
               // TODO: improve:
               // - do not reset
@@ -366,29 +442,33 @@ init() {
       let allCheckboxes = $(":checkbox");
       let showNuScenesLabelsCheckbox = allCheckboxes[0];
       if (this.props.currentDataset === this.props.datasets.NuScenes) {
-          enableShowNuscenesLabelsCheckbox(showNuScenesLabelsCheckbox);
+          this.enableShowNuscenesLabelsCheckbox(showNuScenesLabelsCheckbox);
       }
       let chooseSequenceDropDown;
+      let guiOptions = this.state.guiOptions;
+
+      console.log("guiOptions", guiOptions);
+
       guiOptions.add(parameters, 'datasets', ['NuScenes']).name("Choose dataset")
-          .onChange(function (value) {
-              changeDataset(value);
+          .onChange( (value) => {
+              this.changeDataset(value);
               let allCheckboxes = $(":checkbox");
               let showNuScenesLabelsCheckbox = allCheckboxes[0];
-              if (value === labelTool.datasets.NuScenes) {
-                  enableShowNuscenesLabelsCheckbox(showNuScenesLabelsCheckbox);
-                  disableChooseSequenceDropDown(chooseSequenceDropDown.domElement);
+              if (value === this.props.datasets.NuScenes) {
+                  this.enableShowNuscenesLabelsCheckbox(showNuScenesLabelsCheckbox);
+                  this.disableChooseSequenceDropDown(chooseSequenceDropDown.domElement);
               }
-              hideMasterView();
+              this.hideMasterView();
           });
       chooseSequenceDropDown = guiOptions.add(parameters, 'sequences', [
         this.props.sequencesNuScenes[0]]).name("Choose Sequence")
-          .onChange(function (value) {
-              changeSequence(value);
-              hideMasterView();
+          .onChange( (value) => {
+            this.changeSequence(value);
+            this.hideMasterView();
           });
 
       let showFieldOfViewCheckbox = guiOptions.add(parameters, 'show_field_of_view').name('Field-Of-View').listen();
-      showFieldOfViewCheckbox.onChange(function (value) {
+      showFieldOfViewCheckbox.onChange( (value) => {
         this.props.showFieldOfView = value;
           if (this.props.showFieldOfView === true) {
             this.props.removeObject('rightplane');
@@ -402,16 +482,16 @@ init() {
           }
       });
       let showProjectedPointsCheckbox = guiOptions.add(parameters, 'show_projected_points').name('Show projected points').listen();
-      showProjectedPointsCheckbox.onChange(function (value) {
+      showProjectedPointsCheckbox.onChange( (value) => {
           showProjectedPointsFlag = value;
           if (showProjectedPointsFlag === true) {
-              showProjectedPoints();
+              this.showProjectedPoints();
           } else {
-              hideProjectedPoints();
+              this.hideProjectedPoints();
           }
       });
       let showGridCheckbox = guiOptions.add(parameters, 'show_grid').name('Show grid').listen();
-      showGridCheckbox.onChange(function (value) {
+      showGridCheckbox.onChange( (value) => {
           showGridFlag = value;
           //let grid = scene.getObjectByName("grid");
           if (grid === undefined || grid.parent === null) {
@@ -424,29 +504,29 @@ init() {
           }
       });
       let filterGroundCheckbox = guiOptions.add(parameters, 'filter_ground').name('Filter ground').listen();
-      filterGroundCheckbox.onChange(function (value) {
+      filterGroundCheckbox.onChange( (value) => {
           filterGround = value;
           if (filterGround === true) {
-              labelTool.removeObject("pointcloud-scan-" + labelTool.currentFileIndex);
-              addObject(pointCloudScanNoGroundList[labelTool.currentFileIndex], "pointcloud-scan-no-ground-" + labelTool.currentFileIndex);
+              this.props.removeObject("pointcloud-scan-" + this.props.currentFileIndex);
+              this.addObject(pointCloudScanNoGroundList[this.props.currentFileIndex], "pointcloud-scan-no-ground-" + this.props.currentFileIndex);
           } else {
-              labelTool.removeObject("pointcloud-scan-no-ground-" + labelTool.currentFileIndex);
-              addObject(pointCloudScanList[labelTool.currentFileIndex], "pointcloud-scan-" + labelTool.currentFileIndex);
+            this.props.removeObject("pointcloud-scan-no-ground-" + this.props.currentFileIndex);
+            this.addObject(this.state.pointCloudScanList[this.props.currentFileIndex], "pointcloud-scan-" + this.props.currentFileIndex);
           }
       });
 
       let hideOtherAnnotationsCheckbox = guiOptions.add(parameters, 'hide_other_annotations').name('Hide other annotations').listen();
-      hideOtherAnnotationsCheckbox.onChange(function (value) {
+      hideOtherAnnotationsCheckbox.onChange( (value) => {
           hideOtherAnnotations = value;
           let selectionIndex = annotationObjects.getSelectionIndex();
           if (hideOtherAnnotations === true) {
-              for (let i = 0; i < annotationObjects.contents[labelTool.currentFileIndex].length; i++) {
+              for (let i = 0; i < annotationObjects.contents[this.props.currentFileIndex].length; i++) {
                   // remove 3D labels
-                  let mesh = labelTool.cubeArray[labelTool.currentFileIndex][i];
+                  let mesh = this.props.cubeArray[this.props.currentFileIndex][i];
                   mesh.material.opacity = 0;
                   // remove all 2D labels
-                  for (let j = 0; j < annotationObjects.contents[labelTool.currentFileIndex][i].channels.length; j++) {
-                      let channelObj = annotationObjects.contents[labelTool.currentFileIndex][i].channels[j];
+                  for (let j = 0; j < annotationObjects.contents[this.props.currentFileIndex][i].channels.length; j++) {
+                      let channelObj = annotationObjects.contents[this.props.currentFileIndex][i].channels[j];
                       // remove drawn lines of all 6 channels
                       for (let lineObj in channelObj.lines) {
                           if (channelObj.lines.hasOwnProperty(lineObj)) {
@@ -460,20 +540,20 @@ init() {
               }
               if (selectionIndex !== -1) {
                   // draw selected object in 2D and 3D
-                  update2DBoundingBox(labelTool.currentFileIndex, selectionIndex, true);
+                  this.update2DBoundingBox(this.props.currentFileIndex, selectionIndex, true);
               }
           } else {
-              for (let i = 0; i < annotationObjects.contents[labelTool.currentFileIndex].length; i++) {
+              for (let i = 0; i < annotationObjects.contents[this.props.currentFileIndex].length; i++) {
                   // show 3D labels
-                  let mesh = labelTool.cubeArray[labelTool.currentFileIndex][i];
+                  let mesh = this.props.cubeArray[this.props.currentFileIndex][i];
                   mesh.material.opacity = 0.9;
                   // show 2D labels
                   if (selectionIndex === i) {
                       // draw selected object in 2D and 3D
-                      update2DBoundingBox(labelTool.currentFileIndex, selectionIndex, true);
+                      this.update2DBoundingBox(this.props.currentFileIndex, selectionIndex, true);
                   } else {
                       if (selectionIndex !== -1) {
-                          update2DBoundingBox(labelTool.currentFileIndex, i, false);
+                        this.update2DBoundingBox(this.props.currentFileIndex, i, false);
                       }
                   }
 
@@ -487,11 +567,14 @@ init() {
 
 
       let interpolationModeCheckbox = guiOptions.add(parameters, 'interpolation_mode').name('Interpolation Mode');
+      let interpolationMode = this.state.interpolationMode;
+      let interpolationObjIndexCurrentFile = this.state.interpolationObjIndexCurrentFile;
+      
       interpolationModeCheckbox.domElement.id = 'interpolation-checkbox';
       // if scene contains no objects then deactivate checkbox
-      if (annotationFileExist(undefined, undefined) === false || interpolationMode === false) {
+      if (this.props.annotationFileExist(undefined, undefined) === false || interpolationMode === false) {
           // no annotation file exist -> deactivate checkbox
-          disableInterpolationModeCheckbox(interpolationModeCheckbox.domElement);
+          this.disableInterpolationModeCheckbox(interpolationModeCheckbox.domElement);
       }
 
       interpolationModeCheckbox.onChange(function (value) {
@@ -500,7 +583,7 @@ init() {
               interpolationObjIndexCurrentFile = annotationObjects.getSelectionIndex();
               if (interpolationObjIndexCurrentFile !== -1) {
                   // set interpolation start position
-                  let obj = annotationObjects.contents[labelTool.currentFileIndex][interpolationObjIndexCurrentFile];
+                  let obj = annotationObjects.contents[this.props.currentFileIndex][interpolationObjIndexCurrentFile];
                   obj["interpolationStart"]["position"]["x"] = obj["x"];
                   obj["interpolationStart"]["position"]["y"] = obj["y"];
                   obj["interpolationStart"]["position"]["z"] = obj["z"];
@@ -509,23 +592,23 @@ init() {
                   obj["interpolationStart"]["size"]["length"] = obj["length"];
                   obj["interpolationStart"]["size"]["height"] = obj["height"];
                   // short interpolation start index (Interpolation Start Position (frame 400)
-                  folderPositionArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Position (frame " + (labelTool.currentFileIndex + 1) + ")";
-                  folderSizeArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Size (frame " + (labelTool.currentFileIndex + 1) + ")";
+                  folderPositionArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Position (frame " + (this.props.currentFileIndex + 1) + ")";
+                  folderSizeArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Interpolation Start Size (frame " + (this.props.currentFileIndex + 1) + ")";
                   // set start index
-                  annotationObjects.contents[labelTool.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"] = labelTool.currentFileIndex;
+                  annotationObjects.contents[this.props.currentFileIndex][interpolationObjIndexCurrentFile]["interpolationStartFileIndex"] = this.props.currentFileIndex;
               }
               // check 'copy label to next frame' of selected object
-              annotationObjects.contents[labelTool.currentFileIndex][interpolationObjIndexCurrentFile]["copyLabelToNextFrame"] = true;
+              annotationObjects.contents[this.props.currentFileIndex][interpolationObjIndexCurrentFile]["copyLabelToNextFrame"] = true;
               let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + interpolationObjIndexCurrentFile);
               checkboxElem.firstChild.checked = true;
               // disable checkbox
-              disableCopyLabelToNextFrameCheckbox(checkboxElem);
+              this.disableCopyLabelToNextFrameCheckbox(checkboxElem);
           } else {
-              disableInterpolationBtn();
+              this.disableInterpolationBtn();
               if (interpolationObjIndexCurrentFile !== -1) {
                   folderPositionArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Position";
                   folderSizeArray[interpolationObjIndexCurrentFile].domElement.firstChild.firstChild.innerText = "Size";
-                  enableStartPositionAndSize();
+                  this.enableStartPositionAndSize();
                   //[1].__folders[""Interpolation End Position (frame 1)""]
                   for (let i = 0; i < folderBoundingBox3DArray.length; i++) {
                       // get all keys of folders object
@@ -540,7 +623,7 @@ init() {
                   // folderBoundingBox3DArray[interpolationObjIndexCurrentFile].removeFolder("Interpolation End Size (frame " + (labelTool.previousFileIndex + 1) + ")");
                   // enable checkbox
                   let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + interpolationObjIndexCurrentFile);
-                  enableCopyLabelToNextFrameCheckbox(checkboxElem);
+                  this.enableCopyLabelToNextFrameCheckbox(checkboxElem);
               }
               interpolationObjIndexCurrentFile = -1;
 
@@ -548,7 +631,7 @@ init() {
       });
       interpolateBtn = guiOptions.add(parameters, 'interpolate').name("Interpolate");
       interpolateBtn.domElement.id = 'interpolate-btn';
-      disableInterpolationBtn();
+      this.disableInterpolationBtn();
 
       guiOptions.add(parameters, 'reset_all').name("Reset all");
       guiOptions.add(parameters, 'skip_frames').name("Skip frames").onChange(function (value) {
@@ -557,7 +640,7 @@ init() {
           } else {
               value = parseInt(value);
           }
-          labelTool.skipFrameCount = value;
+          this.props.skipFrameCount = value;
       });
 
 
@@ -566,11 +649,11 @@ init() {
       let downloadAnnotationsItem = $($('#bounding-box-3d-menu ul li')[0]);
       let downloadAnnotationsDivItem = downloadAnnotationsItem.children().first();
       downloadAnnotationsDivItem.wrap("<a href=\"\"></a>");
-      loadColorMap();
+      this.loadColorMap();
       if (showProjectedPointsFlag === true) {
-          showProjectedPoints();
+          this.showProjectedPoints();
       } else {
-          hideProjectedPoints();
+          this.hideProjectedPoints();
       }
   }
   let classPickerElem = $('#class-picker ul li');
@@ -578,6 +661,8 @@ init() {
   $(classPickerElem[0]).css('background-color', '#525252');
   classPickerElem.css('border-bottom', '0px');
 
+  let guiOptionsOpened = this.state.guiOptionsOpened;
+  let guiOptions = this.state.guiOptions;
 
   $('#bounding-box-3d-menu').css('width', '480px');
   $('#bounding-box-3d-menu ul li').css('background-color', '#353535');
@@ -591,9 +676,9 @@ init() {
   });
 
   guiOptions.open();
-  classPickerElem.each(function (i, item) {
-      let propNamesArray = Object.getOwnPropertyNames(classesBoundingBox);
-      let color = classesBoundingBox[propNamesArray[i]].color;
+  classPickerElem.each( (i, item) => {
+      let propNamesArray = Object.getOwnPropertyNames(ClassesboundingBox);
+      let color = ClassesboundingBox[propNamesArray[i]].color;
       let attribute = "20px solid" + ' ' + color;
       $(item).css("border-left", attribute);
       $(item).css('border-bottom', '0px');
@@ -603,7 +688,7 @@ init() {
   // elem.val("1. Draw bounding box ");
   // elem.css("color", "#969696");
 
-  initViews();
+  this.initViews();
 
 }
 
@@ -764,19 +849,19 @@ interpolate = () => {
 
 // parameters
 
-// let parameters = {
-//     download_video: function () {
-//         downloadVideo();
+// parameters = {
+//     download_video: () => {
+//         this.downloadVideo();
 //     },
-//     download: function () {
-//         download();
+//     download: () => {
+//         this.download();
 //     },
-//     undo: function () {
-//         undoOperation();
+//     undo: () => {
+//         this.undoOperation();
 //     },
 //     i: -1,
-//     switch_view: function () {
-//         switchView();
+//     switch_view: () => {
+//         this.switchView();
 //     },
 //     datasets: this.state.datasets.NuScenes,
 //     sequences: "ONE",
@@ -786,14 +871,14 @@ interpolate = () => {
 //     show_grid: false,
 //     filter_ground: false,
 //     hide_other_annotations: hideOtherAnnotations,
-//     select_all_copy_label_to_next_frame: function () {
+//     select_all_copy_label_to_next_frame: () => {
 //         for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
 //             annotationObjects.contents[this.state.currentFileIndex][i]["copyLabelToNextFrame"] = true;
 //             let checkboxElem = document.getElementById("copy-label-to-next-frame-checkbox-" + i);
 //             checkboxElem.firstChild.checked = true;
 //         }
 //     },
-//     unselect_all_copy_label_to_next_frame: function () {
+//     unselect_all_copy_label_to_next_frame: () => {
 //         for (let i = 0; i < annotationObjects.contents[this.state.currentFileIndex].length; i++) {
 //             // set all to false, expect the selected object (if interpolation mode active)
 //             if (interpolationMode === false || i !== annotationObjects.getSelectionIndex()) {
@@ -810,16 +895,16 @@ interpolate = () => {
 //     },
 //     show_detections: false,
 //     interpolation_mode: false,
-//     interpolate: function () {
+//     interpolate: () => {
 //         if (interpolationMode === true) {
 //             this.interpolate();
 //         }
 //     },
-//     reset_all: function () {
-//         labelTool.resetBoxes()
+//     reset_all: () => {
+//         this.props.resetBoxes()
 //     },
 //     skip_frames: labelTool.skipFrameCount
-// };
+//   };
 
 /*********** Event handlers **************/
 
@@ -1922,44 +2007,6 @@ onDraggingChangedHandler = (event) => {
     // TODO: scale only on one side
     if (transformControls.getMode() === "scale") {
         // labelTool.selectedMesh.translateY(labelTool.selectedMesh.geometry.parameters.height / 2)
-    }
-}
-
-render3d = () => {
-
-  let mainView = views[0];
-    renderer.setViewport(mainView.left, mainView.top, mainView.width, mainView.height);
-    renderer.setScissor(mainView.left, mainView.top, mainView.width, mainView.height);
-    renderer.setScissorTest(true);
-    renderer.setClearColor(mainView.background);
-
-    currentCamera.aspect = mainView.width / mainView.height;
-    currentCamera.updateProjectionMatrix();
-    renderer.render(scene, currentCamera);
-
-    // renderer.clear();
-    if (labelTool.selectedMesh !== undefined) {
-        for (let i = 1; i < views.length; i++) {
-            let view = views[i];
-            let camera = view.camera;
-            view.updateCamera(camera, scene, labelTool.selectedMesh.position);
-            renderer.setViewport(view.left, view.top, view.width, view.height);
-            renderer.setScissor(view.left, view.top, view.width, view.height);
-            renderer.setScissorTest(true);
-            renderer.setClearColor(view.background);
-            camera.aspect = view.width / view.height;
-            camera.updateProjectionMatrix();
-            renderer.render(scene, camera);
-        }
-    }
-
-    if (labelTool.cubeArray !== undefined && labelTool.cubeArray.length > 0 && labelTool.cubeArray[labelTool.currentFileIndex] !== undefined && labelTool.cubeArray[labelTool.currentFileIndex].length > 0
-        && labelTool.spriteArray !== undefined && labelTool.spriteArray.length > 0 && labelTool.spriteArray[labelTool.currentFileIndex] !== undefined && labelTool.spriteArray[labelTool.currentFileIndex].length > 0) {
-        this.updateAnnotationOpacity();
-        this.updateScreenPosition();
-    }
-    if (keyboardNavigation === false) {
-        currentOrbitControls.update();
     }
 }
 
@@ -4415,12 +4462,14 @@ init = () => {
     const guiAnnotationClasses = this.state.guiAnnotationClasses;
     const parametersBoundingBox = this.state.parametersBoundingBox;
     // const guiOptions = this.state.guiOptions;
-    // const guiOptionsOpened = this.state.guiOptionsOpened;
+    const guiOptionsOpened = this.state.guiOptionsOpened;
     const showProjectedPointsFlag = this.state.showProjectedPointsFlag;
     const filterGround = this.state.filterGround;
     const guiBoundingBoxAnnotationMap = this.state.guiBoundingBoxAnnotationMap;
     const grid = this.state.grid;
     const interpolateBtn = this.state.interpolateBtn;
+
+    
 
     // keyboard = new KeyboardState();
     // clock = new THREE.Clock();

@@ -1931,6 +1931,8 @@ export default class baseLabelTool extends Component {
         skipFrameCount = {this.state.skipFrameCount}
         paperArrayAll = {this.state.paperArrayAll}
         getDefaultObject = {()=>this.getDefaultObject}
+        showOriginalNuScenesLabels= {this.state.showOriginalNuScenesLabels}
+        resetBoxes={()=>this.resetBoxes}
       />,
 
       <boundingBox 
